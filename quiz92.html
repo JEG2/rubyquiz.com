@@ -1,0 +1,97 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - DayRange (#92)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">DayRange (#92)</span>
+			<p>by Bryan Donovan</p>
+			<p>If you've ever created a web application that deals with scheduling recurring events, you may have found yourself creating a method to convert a list of days into a more human-readable string.</p>
+			<p>For example, suppose a musician plays at a certain venue on Monday, Tuesday, Wednesday, and Saturday. You could pass a list of associated day numbers to your object or method, which might return "Mon-Wed, Sat".</p>
+			<p>The purpose of this quiz is to find the best "Ruby way" to generate this sentence-like string.</p>
+			<p>Basically, the rules are:</p>
+			<p class="example">* The class's constructor should accept a list of arguments that can be day<br />  numbers (see day number hash below), day abbreviations ('Mon', 'Tue', etc.),<br />  or the full names of the days ('Monday', 'Tuesday', etc.).<br />* If an invalid day id is included in the argument list, the constructor<br />  should raise an ArgumentError.<br />* The days should be sorted starting with Monday.<br />* Three or more consecutive days should be represented by listing the first<br />  day followed by a hyphen (-), followed by the last day of the range.<br />* Individual days and the above day ranges should be separated by commas.<br />* The class should number days (accepting Integers or Strings) as follows:<br />    1:  Mon<br />    2:  Tue<br />    3:  Wed<br />    4:  Thu<br />    5:  Fri<br />    6:  Sat<br />    7:  Sun<br />* The class needs a method named #to_s that returns the day range string.<br />  Here are some example lists of days and their expected returned strings:<br />    1,2,3,4,5,6,7:  Mon-Sun<br />    1,2,3,6,7:      Mon-Wed, Sat, Sun<br />    1,3,4,5,6:      Mon, Wed-Sat<br />    2,3,4,6,7:      Tue-Thu, Sat, Sun<br />    1,3,4,6,7:      Mon, Wed, Thu, Sat, Sun<br />    7:              Sun<br />    1,7:            Mon, Sun<br />    1,8:            ArgumentError</p>
+			<p>This is not intended to be a difficult quiz, but I think the solutions would be useful in many situations, especially in web applications. The solution I have come up with works and is relatively fast (fast enough for my purposes anyway), but isn't very elegant. I'm very interested in seeing how others approach the problem.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>A couple of submitters mentioned that this problem isn't quite as simple as it looks like it should be and I agree.  When I initially read it, I was convinced I could come up with a clever iterator call that spit out the output.  People got it down to a few lines, but it's still just not as straightforward as I expected it to be.</p>
+			<p>A large number of the submitted solutions included tests this time around.  I think that's because the quiz did a nice job of laying down the ground rules and this is one of those cases where it's very easy to quickly layout a set of expected behaviors.</p>
+			<p>A lot of solutions also added some additional functionality, beyond what the quiz called for.  Many interesting additions were offered including enumeration, support for Date methods, mixed input, and configurable output.  A lot of good ideas in there.</p>
+			<p>Below, I want to examine Robin Stocker's solution, which did include a neat extra feature.  Let's begin with the tests:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'test/unit'</span><br /><br />    <span class="keyword">class</span> DayRangeTest &lt; Test::Unit::TestCase<br /><br />      <span class="keyword">def</span> test_english<br />        tests = {<br />          [1,2,3,4,5,6,7] =&gt; <span class="string">'Mon-Sun'</span>,<br />          [1,2,3,6,7]     =&gt; <span class="string">'Mon-Wed, Sat, Sun'</span>,<br />          [1,3,4,5,6]     =&gt; <span class="string">'Mon, Wed-Sat'</span>,<br />          [2,3,4,6,7]     =&gt; <span class="string">'Tue-Thu, Sat, Sun'</span>,<br />          [1,3,4,6,7]     =&gt; <span class="string">'Mon, Wed, Thu, Sat, Sun'</span>,<br />          [7]             =&gt; <span class="string">'Sun'</span>,<br />          [1,7]           =&gt; <span class="string">'Mon, Sun'</span>,<br />          <span class="string">%w(Mon Tue Wed)</span> =&gt; <span class="string">'Mon-Wed'</span>,<br />          <span class="string">%w(Frid Saturd Sund)</span> =&gt; <span class="string">'Fri-Sun'</span>,<br />          <span class="string">%w(Monday Wednesday Thursday Friday)</span> =&gt; <span class="string">'Mon, Wed-Fri'</span>,<br />          [1, <span class="string">'Tuesday'</span>, 3] =&gt; <span class="string">'Mon-Wed'</span><br />        }<br />        tests.each <span class="keyword">do</span> |days, expected|<br />          assert_equal expected, DayRange.new(days).to_s<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Here we see a set of hand-picked cases being tried for expected results.  Most submitted tests iterated over some cases like this, since it's a pretty easy way to spot check basic functionality.</p>
+			<p>Do note the final test case handling mixed input.  Robin's code supports that, as many others did.</p>
+			<p>Here are some tests for Robin's extra feature, language translation:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> test_german<br />        tests = {<br />          [1,2,3,4,5,6,7] =&gt; <span class="string">'Mo-So'</span>,<br />          [1,2,3,6,7]     =&gt; <span class="string">'Mo-Mi, Sa, So'</span>,<br />          [1,3,4,5,6]     =&gt; <span class="string">'Mo, Mi-Sa'</span>,<br />          [2,3,4,6,7]     =&gt; <span class="string">'Di-Do, Sa, So'</span>,<br />          [1,3,4,6,7]     =&gt; <span class="string">'Mo, Mi, Do, Sa, So'</span>,<br />          [7]             =&gt; <span class="string">'So'</span>,<br />          [1,7]           =&gt; <span class="string">'Mo, So'</span>,<br />          <span class="string">%w(Mo Di Mi)</span>    =&gt; <span class="string">'Mo-Mi'</span>,<br />          <span class="string">%w(Freit Samst Sonnt)</span> =&gt; <span class="string">'Fr-So'</span>,<br />          <span class="string">%w(Montag Mittwoch Donnerstag Freitag)</span> =&gt; <span class="string">'Mo, Mi-Fr'</span>,<br />          [1, <span class="string">'Dienstag'</span>, 3] =&gt; <span class="string">'Mo-Mi'</span><br />        }<br />        tests.each <span class="keyword">do</span> |days, expected|<br />          assert_equal expected, DayRangeGerman.new(days).to_s<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> test_translation<br />        eng = <span class="string">%w(Mon Tue Wed Fri)</span><br />        assert_equal <span class="string">'Mo-Mi, Fr'</span>,<br />                     DayRangeGerman.new(DayRange.new(eng).days).to_s<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This time the spot checking is done in German, the other language included in this solution.  You can also see support for translating between languages, in the second test here.</p>
+			<p>One last test:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> test_should_raise<br />        assert_raise ArgumentError <span class="keyword">do</span><br />          DayRange.new([1, 8])<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This time the test ensures that the code does not accept invalid arguments.  Some people chose to spot check several edge cases here as well.</p>
+			<p>OK, let's get to the solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'abbrev'</span><br /><br />    <span class="keyword">class</span> DayRange<br /><br />      <span class="keyword">def</span> <span class="keyword">self</span>.use_day_names(week, abbrev_length=3)<br />        <span class="variable">@day_numbers</span> = {}<br />        <span class="variable">@day_abbrevs</span> = {}<br />        week.abbrev.each <span class="keyword">do</span> |abbr, day|<br />          num = week.index(day) + 1<br />          <span class="variable">@day_numbers</span>[abbr] = num<br />          <span class="keyword">if</span> abbr.length == abbrev_length<br />            <span class="variable">@day_abbrevs</span>[num] = abbr<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      use_day_names \<br />        <span class="string">%w(Monday Tuesday Wednesday Thursday Friday Saturday Sunday)</span><br /><br />      <span class="keyword">def</span> day_numbers; <span class="keyword">self</span>.<span class="keyword">class</span>.class_eval{ <span class="variable">@day_numbers</span> } <span class="keyword">end</span><br />      <span class="keyword">def</span> day_abbrevs; <span class="keyword">self</span>.<span class="keyword">class</span>.class_eval{ <span class="variable">@day_abbrevs</span> } <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The main work horse here is DayRange::use_day_names, which you can see used just below the definition.  This associates seven names with the day indices the program uses to work.</p>
+			<p>Array#abbrev is used here so the code can create a lookup table for all possible abbreviations to the actual numbers.  Another lookup table is populated for the code to use in output Strings and this one accepts a target abbreviation size.</p>
+			<p>The two instance methods below provide access to the lookup tables.  Note that these two methods could use Object#instance_variable_get as opposed to Module#class_eval if desired.</p>
+			<p>Next chunk of code, coming right up:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      attr_reader :days<br /><br />      <span class="keyword">def</span> initialize(days)<br />        <span class="variable">@days</span> = days.collect{ |d| day_numbers[d] <span class="keyword">or</span> d }<br />        <span class="keyword">if</span> <span class="keyword">not</span> (<span class="variable">@days</span> - day_abbrevs.keys).empty?<br />          raise ArgumentError<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Nothing too tricky here.  DayRange#initialize handles the mixed input by trying to find it in the lookup table or defaulting to what was passed.  There's also a check in here to make sure we end up with only days we have a name for.  This handles bounds checking of the input.</p>
+			<p>Other solutions varied the initialization process a bit.  I particularly liked how Marshall T. Vandergrift allowed for multiple arguments, a single Array, or even Ranges to be passed with some nice Array#flatten work.</p>
+			<p>Alright, let's get back to Robin's solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">        <span class="comment"># ...</span><br /><br />        <span class="keyword">def</span> to_s<br />          ranges = []<br />          number_ranges.each <span class="keyword">do</span> |range|<br />            <span class="keyword">case</span> range[1] - range[0]<br />            <span class="keyword">when</span> 0; ranges &lt;&lt; day_abbrevs[range[0]]<br />            <span class="keyword">when</span> 1; ranges.concat day_abbrevs.values_at(*range)<br />            <span class="keyword">else</span>    ranges &lt;&lt; day_abbrevs.values_at(*range).join(<span class="string">'-'</span>)<br />            <span class="keyword">end</span><br />          <span class="keyword">end</span><br />          ranges.join(<span class="string">', '</span>)<br />        <span class="keyword">end</span><br /><br />        <span class="keyword">def</span> number_ranges<br />          <span class="variable">@days</span>.inject([]) <span class="keyword">do</span> |l, d|<br />            <span class="keyword">if</span> l.last <span class="keyword">and</span> l.last[1] + 1 == d<br />              l.last[1] = d<br />            <span class="keyword">else</span><br />              l &lt;&lt; [d, d]<br />            <span class="keyword">end</span><br />            l<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br /><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This is the heart of the String building process and many solutions landed on code similar to this.  DayRange#number_ranges starts the process by building an Array of Arrays with the days divided into groups of start and end days.  Days that run in succession are grouped together and lone days appear as both the start and end.  For example, the days 1, 2, 3, and 6 would be divided into `[[1, 3], [6, 6]]`.</p>
+			<p>DayRange#to_s takes the Array from that process and turns it into the output String.  It just separates the groups by the number of members they have.  One and two day groups just have their days added to an Array used to build up the output.  Longer groups are turned into strings with a hyphen between the first and last entries.  Finally, the Array is joined with commas creating the desired String result.</p>
+			<p>Ready to see how much extra work it was to translate this class to German?</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> DayRangeGerman &lt; DayRange<br />      use_day_names \<br />        <span class="string">%w(Montag Dienstag Mittwoch Donnerstag Freitag Samstag Sonntag)</span>, 2<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The only required step is to supply the day names and abbreviation level, as you can see.  It wouldn't be much work to add a whole slew of supported languages to this solution.  Very nice.</p>
+			<p>My thanks to the many people who came out of the woodwork to show just how creative you can be.  You all made such cool solutions and I hope others will take some time to browse through them.</p>
+			<p>Tomorrow, we will attempt to psychoanalyze Ruby's Integer class...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210925">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210940">Morton Goldberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210945">Gordon Thiesfeld</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210949">William Henderson-Frost</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210950">Karl Czisch</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210953">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210956">Marshall T. Vandergrift</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210957">R&ouml;rd Hinrichsen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210960">Mike Stok</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/210992">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211000">Morus Walter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211004">Robin Stocker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211029">darren kirby</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211038">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211039">Mathias Kegelmann</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211065">Jason Merril</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211069">Boris Prinz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211120">Robert Retzbach</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211170">Adam Shelly (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211176">Adrian Falcone</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211181">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211203">Ken Bloom (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211205">Roland Swingler</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211219">Adam Skobi</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211323">Bryan Donovan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211366">Kamal Fariz Mahyuddin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211367">Stuart</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211371">Adrian Falcone (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211460">Morton Goldberg (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211569">Rick DeNatale</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211630">Rick DeNatale (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/211847">Eric Torreborre</a></li>
+			</ol>
+			<p><a href="quiz92_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Programmer Ping-Pong (#150)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Programmer Ping-Pong (#150)</span>
+			<p>This is a non-traditional Ruby Quiz that changes the rules of the contest.  Please read the entire message before playing along.  We will be back to normal quizzes next time, for those that end up missing them.</p>
+			<p class="example">The Game</p>
+			<p>Eric Hodel described Programmer Ping-Pong in his RubyConf 2007 presentation.  I wasn't familiar with the concept before that and it sounds like fun, so let's all try it out together.</p>
+			<p>The rules are:</p>
+			<p class="example">* This quiz does not have a no-spoiler period so you may<br />  submit at anytime after reading this message<br />* I'll make the initial serve, starting the quiz off with<br />  a single failing test<br />* Anyone can return the ball at anytime by doing exactly<br />  two things, in order:  make all tests pass including the<br />  recently added failure and then add a new failing test<br />  of your own</p>
+			<p>I want to see if we can build an entire library using just that process.</p>
+			<p class="example">The Task</p>
+			<p>Let's build a pure Ruby binary AVL tree.  An AVL tree is a self-balancing binary tree data structure where insertion, deletion, and lookup all take O(log n) time to execute.  This is handy to have for many search problems that must run quickly.  It can also be used to build constructs like an OrderedHash.</p>
+			<p>You can read more about AVL trees on Wikipedia:</p>
+			<p><a href="http://en.wikipedia.org/wiki/Avl_tree">AVL tree</a></p>
+			<p>There's also a handy document describing their rotations in detail:</p>
+			<p><a href="http://fortheloot.com/public/AVLTreeTutorial.rtf">AVL tree Rotations Tutorial</a></p>
+			<p>What features our AVL tree will support will be decided by you as you write tests.  Here are some suggestions of things we might try though, just to get you thinking:</p>
+			<p class="example">* Support for custom Ruby objects as nodes of the tree<br />* The ability to customize the comparison code, perhaps with a block<br />* A String output visualizer, possibly for the inspect() method<br />* Any other great features you can think of to add</p>
+			<p class="example">The Details</p>
+			<p>We will have two files:  avl_tree.rb and test_avl_tree.rb.  Please pass both files in each submission email you make for this quiz.  Let's not complicate this with directory structures or zip files.</p>
+			<p>Please don't add any external dependencies, unless it's a standard library.  We want everyone to be able to easily run this code and play along.</p>
+			<p>We are using Test::Unit instead of RSpec, or any other tool, for similar reasons.</p>
+			<p>Please keep your tests short.  Under 10 lines is preferred, but don't go over 24.</p>
+			<p>Also try to test just one aspect of the implementation with each test.  I did purposely say "aspect" and not "method."  I do test more than one method in the serve and I can imagine other scenarios where it could be useful, like checking support for a handful of the standard Enumerator methods.</p>
+			<p>You can refactor any code as needed provided you do not change its function and all tests still pass after you do so.</p>
+			<p>Adds comments if you need to, but writing code that needs no comment would be even better.</p>
+			<p>Let's use some simple spacing conventions to keep all of us on the same page.  Indent two space and do not use tabs.  Break up long lines so they do not exceed 80 characters.</p>
+			<p>Finally, this quiz has the potential to be very chaotic.  Take pity on your quizmaster who must track this process and on the rest of the community who may be bothered by a highly active thread.  I suggest good email manners:</p>
+			<p class="example">* Use your client's "Reply" feature and make sure you are replying to<br />  the message that contains the test you made pass<br />* Trim any unneeded context from the reply, including the previous<br />  version of the code since you will be including the current copy<br />  of the whole thing<br />* Kindness to your fellow programmers trumps any listed guidelines</p>
+			<p class="example">The Serve</p>
+			<p>The initial contents of avl_tree.rb are:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -wKU</span><br /><br />    <span class="keyword">class</span> AVLTree<br /><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The test file, test_avl_tree.rb, begins as:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -wKU</span><br /><br />    require <span class="string">"test/unit"</span><br /><br />    require <span class="string">"avl_tree"</span><br /><br />    <span class="keyword">class</span> TestAVLTree &lt; Test::Unit::TestCase<br />      <span class="keyword">def</span> setup<br />        <span class="variable">@tree</span> = AVLTree.new<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> test_tree_membership<br />        assert_equal(<span class="keyword">true</span>,  <span class="variable">@tree</span>.empty?)<br />        assert_equal(<span class="keyword">false</span>, <span class="variable">@tree</span>.include?(3))<br /><br />        <span class="variable">@tree</span> &lt;&lt; 3<br /><br />        assert_equal(<span class="keyword">false</span>, <span class="variable">@tree</span>.empty?)<br />        assert_equal(<span class="keyword">true</span>,  <span class="variable">@tree</span>.include?(3))<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /></div></div>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This quiz was definitely more about the process than what we produced.  For the record though, I do feel what we produced was quite successful.  We have built a full AVL Tree implementation in under a week.  It may still have a bug or two we haven't eliminated, but it's certainly usable.  Let me prove that to you.</p>
+			<p>Here is the start of an ordered Hash implementation I said would be possible with a working AVL tree.  Unlike Ruby 1.9's built-in Hash ordering, this class orders pairs by their key instead of their insertion order:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -wKU</span><br /><br />    require <span class="string">"avl_tree"</span><br /><br />    <span class="keyword">class</span> KeyOrderedHash<br />      Pair = Struct.new(:key, :value) <span class="keyword">do</span><br />        <span class="keyword">def</span> &lt;=&gt;(other)<br />          key &lt;=&gt; other.key<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      include Enumerable<br /><br />      <span class="keyword">def</span> initialize<br />        <span class="variable">@pairs</span> = AVLTree.new<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> [](key)<br />        <span class="variable">@pairs</span>[Pair.new(key)].value<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> []=(key, value)<br />        <span class="variable">@pairs</span> &lt;&lt; Pair.new(key, value)<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> each<br />        <span class="variable">@pairs</span>.each { |pair| <span class="keyword">yield</span> pair.to_a }<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$PROGRAM_NAME</span><br />      require <span class="string">"pp"</span><br /><br />      names = KeyOrderedHash.new<br />      <span class="string">%w[ Rob\ Biedenharn<br />          Adam\ Shelly<br />          James\ Koppel ]</span>.each_with_index <span class="keyword">do</span> |name, i|<br />        names[name] = i<br />      <span class="keyword">end</span><br />      pp names.to_a<br />      <span class="comment"># &gt;&gt; [["Adam Shelly", 1], ["James Koppel", 2], ["Rob Biedenharn", 0]]</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Note how the pairs here come out in key order, instead of the insertion order shown by their values.</p>
+			<p>The process was also pretty successful.  Some felt email was a poor medium to conduct this kind of experiment and they were probably right.  Rob Biedenharn came to our rescue though with two simple tools for embedding and extracting the code from an email.  Together these two tools were under 40 lines of code and they helped a lot.  Nice problem solving, Rob.</p>
+			<p>We did see quite a bit of forking early on, but in the end a single branch of the code seemed to dominate.  Solvers were good about incorporating the changes of others though, so I didn't really feel like this aspect affected the results much.</p>
+			<p>As of James Koppel's first response, the code has gone through 15 rounds of revision, not counting forks.  In that time, we generated right around 500 lines of code including the tests.  I was pretty impressed by all of that.</p>
+			<p>Obviously, the largest aspect of this quiz was the game of Test Driven Development.  That too was interesting to watch unfold.  Tests were edited, commented out, and reinstated all at various times during the exercise.  This happens all the time in normal development of course, but it's different when you are doing these things to someone else's tests.</p>
+			<p>It's my opinion that the testing got off track a bit early on when we tried to do height testing before we really had a height to test.  A few early height tests eventually caused this method to crop up inside AVLTree:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> height<br />        (Math.log(<span class="variable">@contents</span>.size + 1) / Math.log(2)).round<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>While that does reflect accurate results for what we were trying to accomplish, it really doesn't have anything to do with our tree.  It just proves that we figured out the math.  This is one place where I feel the concept of only-do-what's-needed-to-pass-the-tests breaks down.  This code just has to be rewritten at some point, so there's not much benefit to bypassing a test with it, in my opinion.</p>
+			<p>Another area where we had trouble with the tests was in trying to measure the speed of something.  None of us could come up with a great way to test for whether and insert operation was O(n) or O(log n) or something else entirely.  One poster suggested that test driving algorithms wasn't very effective and, while I'm not sure I fully agree with that, this is definitely one of the problem cases.</p>
+			<p>All in all though, the process was a big success and we produced great results.  I encourage everyone to read through the quiz thread and see how our work evolved.  Thanks for indulging me in my desires to try something a little different.</p>
+			<p>There will be no Ruby Quiz this week in celebration of the Christmas holiday.  I wish you all a Merry Christmas and I'll talk to you again next week.</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283532">Rick DeNatale</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283538">Paul Irofti</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283542">Rob Biedenharn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283547">Elvind Eklund</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283558">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283569">Rick DeNatale (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283583">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283586">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283590">Adam Shelly (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283597">Paul Irofti (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283626">Ball, Donald A Jr</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283633">Michal Suchanek</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283635">Adam Shelly (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283710">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283739">Rob Biedenharn (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283951">Adam Shelly (4)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283962">Rob Biedenharn (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283981">Adam Shelly (5)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/284024">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/284074">Adam Shelly (6)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/284116">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/284244">Adam Shelly (7)</a></li>
+			</ol>
+			<p><a href="quiz150_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

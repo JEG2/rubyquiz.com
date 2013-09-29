@@ -1,0 +1,89 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - The Golden Fibonacci Ratio (#69)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">The Golden Fibonacci Ratio (#69)</span>
+			<p>by Enrique Meza C</p>
+			<p>You may have noticed that if you have a Golden Rectangle and you cut off a square with side lengths equal to the length shorter rectangle side, then what remains is another Golden Rectangle.</p>
+			<p>This could go on forever. You can just keep cutting off these big squares and getting smaller and smaller Golden rectangles.</p>
+			<p>The idea with the Fibonacci series is to do the same thing in reverse. So the quiz:</p>
+			<p>What you do is start with a square (1 by 1), find the longer side, and add a square of that size to the whole thing to form a new rectangle.</p>
+			<p>So when we start with a 1 by 1 square the longest side is one, so we add another square to it.  Now we have a 2 by 1 rectangle</p>
+			<p>Then the longest side is two, so we connect a 2 by 2 square to our 2 by 1 rectangle to get a 3 by 2 rectangle.  This continues, and the sides of the rectangle will always be a successive Fibonacci number.  Eventually the rectangle will be very close to a Golden Rectangle.</p>
+			<p>I will do a few steps to let you see it in action:</p>
+			<p class="example">###<br /># #    1 by 1, so we add 1 by 1 to get...<br />###<br /><br />######<br /># ## #  Now it is 2 by 1, so we add 2 by 2 to get......<br />######<br /><br />######<br /># ## #<br />######<br />######<br />#    #   Now it is 2 by 3, so we add a 3 by 3 to get.......<br />#    #<br />#    #<br />#    #<br />######<br /><br />###############<br /># ## ##       #<br />#######       #<br />#    ##       #<br />#    ##       #  Now it is 3 by 5, so we would add a 5 by 5 square.<br />#    ##       #<br />#    ##       #<br />###############</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Before we get into discussing this week's solutions, allow me this brief diversion.  Here's a single line from Andrew Johnson's program (with some added whitespace):</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    Fib = Hash.new{ |h, n| n &lt; 2 ? h[n] = n : h[n] = h[n - 1] + h[n - 2] }<br /><br /></div></div>
+			<p>That is a trivial implementation of the Fibonacci number sequence, with built-in memoization, relying mainly on C code (Ruby's Hash implementation).  It's bloody quick too, whipping my own home-grown memoized version by no small margin.</p>
+			<p>I just thought I would point that out because it's too cool and surely a pattern we could find other uses for...</p>
+			<p class="example">Solving the Quiz</p>
+			<p>You can build the output for this quiz several different ways.  My first thought was to spiral the squares, forming a structure similar to the log-cabin quilts my wife makes:</p>
+			<p class="example">###########################<br />#               #         #<br />#               #         #<br />#               #         #<br />#               #         #<br />#               #         #<br />#               #         #<br />#               #         #<br />#               #         #<br />#               #         #<br />#               ###########<br />#               # # #     #<br />#               #####     #<br />#               #   #     #<br />#               #   #     #<br />#               #   #     #<br />###########################</p>
+			<p>However, some submissions used a zig-zag approach that ended up looking like the following:</p>
+			<p class="example">###########################<br /># # #     #               #<br />#####     #               #<br />#   #     #               #<br />#   #     #               #<br />#   #     #               #<br />###########               #<br />#         #               #<br />#         #               #<br />#         #               #<br />#         #               #<br />#         #               #<br />#         #               #<br />#         #               #<br />#         #               #<br />#         #               #<br />###########################</p>
+			<p>This second approach is interesting, because it only ever involves extending the image down or to the right.  This turns out to be very easy to code up.  Here's a solution by MenTaLguY:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/ruby</span><br /><br />    CELL_WIDTH = 5<br />    CELL_HEIGHT = 3<br /><br />    <span class="keyword">def</span> box( size )<br />      width = size * CELL_WIDTH<br />      height = size * CELL_HEIGHT<br />      lines = [<span class="string">"#"</span> * width] + [<span class="string">"##{ "</span> <span class="string">" * ( width - 1 ) }"</span>] * ( height - 1 )<br />      lines.map! { |line| line.dup }<br />    <span class="keyword">end</span><br /><br />    lines = box( 1 )<br />    <span class="global">$*</span>[0].to_i.times <span class="keyword">do</span><br />      width = lines.first.size * CELL_HEIGHT<br />      height = lines.size * CELL_WIDTH<br />      <span class="keyword">if</span> width &gt; height<br />        lines.concat box( width <span class="string">/ CELL_WIDTH /</span> CELL_HEIGHT )<br />      <span class="keyword">else</span><br />        lines.zip box( height <span class="string">/ CELL_WIDTH /</span> CELL_HEIGHT ) <span class="keyword">do</span> |line, box|<br />          line &lt;&lt; box<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br />    lines.each { |line| puts <span class="string">"#{ line }#"</span> }<br />    puts <span class="string">"#{ lines.first }#"</span><br /><br /></div></div>
+			<p>The box() method isn't too difficult to break down.  A width and height are calculated for the new square and an Array of lines is constructed with liberal use of the repeat operator (*).</p>
+			<p>There are two point of interest here.  First, note that lines are drawn with a top and left border, but not a right or bottom border.  That's easier to understand when you see it, so here's a peek at what the lines variable holds after the first call to box():</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    [ <span class="string">"#####"</span>,<br />      <span class="string">"#    "</span>,<br />      <span class="string">"#    "</span> ]<br /><br /></div></div>
+			<p>As you can see, CELL_WIDTH and CELL_HEIGHT include one border, but not the other.</p>
+			<p>The other thing to make note of is the last line of box().  At first, I couldn't figure out why all the lines were being duplicated.  The reason is the way Ruby applies the repeat operator to Arrays:</p>
+			<p class="example">&gt;&gt; ary = ["One String"] * 5                         <br />=&gt; ["One String", "One String", "One String", "One String", "One String"]<br />&gt;&gt; ary.map { |str| str.object_id }<br />=&gt; [1699134, 1699134, 1699134, 1699134, 1699134]</p>
+			<p>Since all of those Strings are the same object, appending to them later would cause problems, thus the calls to dup().</p>
+			<p>The next bit of the solution, the times() iterator, does most of the work.  Don't let that Perlish variable $* throw you here, it's just another name for ARGV.</p>
+			<p>In this section you can see the two different methods for expanding the image.  When the width of the current image is greater than the height, a simple call to concat() is used to append the new lines to the bottom of the image.  If that's not the case, the lines belong on the right hand side and a combination of zip() and &lt;&lt;() is used to join the old and new lines.</p>
+			<p>Now remember, none of these boxes have right or bottom borders.  Each time a new block is added, its top or left border become the bottom or right border for the blocks that were already there.  This keeps the borders from doubling up.  However, it also means that we will be missing a bottom and right border, when we are ready to print the end result.  The last two lines of this solution handle that, ensuring that a right border is added to the end of each line and that the image is followed by a bottom border line.</p>
+			<p>That's really all it takes to create a working solution.</p>
+			<p class="example">Custom Output</p>
+			<p>If you have ever wanted to see an example for some random output library for Ruby, odds are great there was one in these solutions.  It was great to see the impressive array of libraries everyone knows.</p>
+			<p>One of the interesting forms of output was the PostScript language, used by Matthew Moss.  Matthew called his solution "a cheap trick" and it is true that it uses some things we tend to frown on, like liberal use of instance_eval().   Still, I learned a lot from his instant DSL and I think it is worth a look.</p>
+			<p>Here's the class used to produce the final output:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># Postscript class (what a hack!)</span><br />    <span class="keyword">class</span> PS<br />       <span class="keyword">def</span> initialize(&amp;block)<br />          <span class="variable">@cmds</span> = []<br />          instance_eval(&amp;block) <span class="keyword">if</span> block<br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> push(*args, &amp;block)<br />          <span class="variable">@cmds</span> &lt;&lt; args.join(<span class="string">' '</span>)<br />          <span class="variable">@cmds</span> &lt;&lt; instance_eval(&amp;block) <span class="keyword">if</span> block<br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> to_s<br />          <span class="variable">@cmds</span>.join(<span class="string">"\n"</span>)<br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> page(&amp;block)<br />          instance_eval(&amp;block)<br />          push <span class="string">'showpage'</span><br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> path(&amp;block)<br />          push <span class="string">'newpath'</span><br />          instance_eval(&amp;block)<br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> gsave(&amp;block)<br />          push <span class="string">'gsave'</span><br />          instance_eval(&amp;block)<br />          push <span class="string">'grestore'</span><br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> method_missing(name, *args)<br />          push *args + [name]<br />       <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>I know absolutely zip about PostScript, but there are a few things of interest in here, even for dummies like me.  Notice how this class just encompasses an Array of commands (initialize()), gives you tools to add commands (mainly push()), turns all method calls into commands (method_missing()), and stringifies to a line by line set of commands (to_s()).  The other important point here is that pretty much everything takes a block, which allows you to nest calls in a DSL fashion as follows:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># Build Postscript image</span><br />    doc = PS.new <span class="keyword">do</span><br />       <span class="keyword">def</span> box a, b<br />          l, r = [a.x, b.x].min, [a.x, b.x].max<br />          b, t = [a.y, b.y].min, [a.y, b.y].max<br /><br />          moveto l, b<br />          lineto r, b<br />          lineto r, t<br />          lineto l, t<br />          closepath<br />       <span class="keyword">end</span><br /><br />       page <span class="keyword">do</span><br />          translate cx, cy<br /><br />          i = 0<br />          coords.each_pair <span class="keyword">do</span> |a, b|<br />             path <span class="keyword">do</span><br />                box a, b<br />                gsave <span class="keyword">do</span><br />                   setgray Shade.mod_fetch(i += 1)<br />                   fill<br />                <span class="keyword">end</span><br />                stroke<br />             <span class="keyword">end</span><br />          <span class="keyword">end</span><br /><br />          setrgbcolor 0.8, 0.4, 0<br />          path <span class="keyword">do</span><br />             moveto coords.first<br />             angle = 180<br />             coords.each_pair <span class="keyword">do</span> |a, b|<br />                d  = (a + b) * 0.5<br />                d += (a - d).rot90<br />                arcn d, (d - a).len, angle, (angle -= 90)<br />             <span class="keyword">end</span><br />             stroke<br />          <span class="keyword">end</span><br />       <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    puts doc<br /><br /></div></div>
+			<p>Obviously, this output relies on methods and variables I haven't shown, but we're just focusing on the technique here.  Let's zoom in on a small section of that:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    setrgbcolor 0.8, 0.4, 0<br />    path <span class="keyword">do</span><br />       moveto coords.first<br />       angle = 180<br />       coords.each_pair <span class="keyword">do</span> |a, b|<br />          d  = (a + b) * 0.5<br />          d += (a - d).rot90<br />          arcn d, (d - a).len, angle, (angle -= 90)<br />       <span class="keyword">end</span><br />       stroke<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>After that block gets evaluated and the method parameters get flipped by method_missing(), you will see some output like:</p>
+			<p class="example">0.8 0.4 0 setrgbcolor<br />newpath<br />0.0 0.0 moveto<br />5.0 0.0 5.0 180 90 arcn<br />5.0 0.0 5.0 90 0 arcn<br />0.0 0.0 10.0 0 -90 arcn<br />0.0 5.0 15.0 -90 -180 arcn<br />10.0 5.0 25.0 -180 -270 arcn<br />10.0 -10.0 40.0 -270 -360 arcn<br />-15.0 -10.0 65.0 -360 -450 arcn<br />-15.0 30.0 105.0 -450 -540 arcn<br />50.0 30.0 170.0 -540 -630 arcn<br />50.0 -75.0 275.0 -630 -720 arcn<br />-120.0 -75.0 445.0 -720 -810 arcn<br />stroke</p>
+			<p>Obviously Matthew didn't gain a huge advantage in being able to swap the arguments or add commands with normal Ruby syntax.  The real win comes from being able to programatically build up these commands, as you see above.  A path() was reduced to a simple series of steps that produces complex results.  While the interface may be a bit cavalier, I think it does show of how even simple DSLs can be time savers.</p>
+			<p>My usual thanks to a wide range of creative problem solvers!  I was blown away by how many different ways people found to spin this problem.</p>
+			<p>Tomorrow we have a great quiz about attacking problems from a whole new angle from Jay Anderson...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182633">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182658">Shane Emmons</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182661">Jay Anderson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182662">MenTaLguY</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182664">0x002A</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182667">Andrew Johnson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182670">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182676">Brian Mattern</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182683">Geoff Lane</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182695">Hitesh</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182698">gordon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182730">Alexandru E. Ungur</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182741">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182850">Harley Pebley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182950">David Tran (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182965">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/183271">Jay Anderson (2)</a></li>
+			</ol>
+			<p><a href="quiz69_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

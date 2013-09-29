@@ -1,0 +1,62 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Process Rings (#135)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Process Rings (#135)</span>
+			<p>I recently wrote about a challenge in the Programming Erlang book on my blog:</p>
+			<p><a href="http://blog.grayproductions.net/articles/2007/08/13/erlang-message-passing">Erlang Message Passing</a></p>
+			<p>Language comparison issues aside, just figuring out how to build a ring of "processes" was quite the brain bender for me.  That always makes for good Ruby Quiz material, in my opinion.</p>
+			<p>The task is straight forward:</p>
+			<p class="example">1. Your program should take two command-line arguments:  a number of<br />   processes and a number of cycles.<br />2. Begin by creating the requested number of processes, in a ring.<br />   For example, when three processes are requested, process one<br />   creates and sends messages to process two, which creates and sends<br />   messages to process three.  The third process then sends its<br />   messages back to process one.<br />3. Pass a message around your ring of processes a number of times<br />   equal to the requested cycles.  Print timing results for how<br />   long this takes.</p>
+			<p>The message you pass doesn't much matter.  A simple String is fine.  You may also wish to pass a counter with it, to verify the correct number of sends.</p>
+			<p>I'll leave the definition of "processes" intentionally vague.  Ruby doesn't have an equivalent to Erlang processes so we will just say that each process should represent a node where we could run some instructions concurrently.  Be creative.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>I can't speak for the other solvers of course, but this kind of system programming is always complex for me.  I had to fiddle with my own solutions for quite some time to get everything working as expected.  In my fork()ed ring, I particularly struggled with the pipe creation dance.  This kind of task is also hard for me to think of good unit testing strategies for, so I struggled through it without my usual safety net.</p>
+			<p>To break down a solution, let's go with James Koppel's code.  It's a Threaded version and a little easier to follow than my own attempt.  Here's the setup code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="global">$processes</span> = []<br /><br />    <span class="keyword">def</span> kill_processes<br />      <span class="global">$processes</span>.each <span class="keyword">do</span> |thr|<br />        thr.exit!<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>James begins by carving out some space to hold his "processes," really Threads in this case, in a global variable.  A helper is also defined here to kill all of those Threads off at the end of the program execution.</p>
+			<p>The next bit of code defines what each process does.  It defines a Proc object that calls itself recursively both to build the ring and pass messages.  Let's take on just the ring building half first:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    thread_proc = proc <span class="keyword">do</span><br />      Thread.stop<br />      <span class="keyword">if</span> Thread.current[:count] == 0<br />        Thread.current[:<span class="keyword">next</span>] = <span class="global">$processes</span>.first<br />      <span class="keyword">else</span><br />        Thread.current[:<span class="keyword">next</span>] = Thread.new(&amp;thread_proc)<br />        Thread.current[:<span class="keyword">next</span>][:count] = Thread.current[:count] - 1<br />        <span class="global">$processes</span>.push(Thread.current[:<span class="keyword">next</span>])<br />        <span class="keyword">true</span> <span class="keyword">until</span> Thread.current[:<span class="keyword">next</span>].stop?<br />        Thread.current[:<span class="keyword">next</span>].run<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Don't let all those calls to Thread.current() scare you, this code is very simple.  This Proc is meant to be passed as the body of a Thread, so the very first thing is does is stop() the newly created Thread.  This allows the creator to do some setup, then trigger the Thread to run().</p>
+			<p>The if/else branch does the process creation, just by trimming down a counter.  For each point, the code points the :next Thread local variable at a new Thread that recursively calls this Proc.  The new Thread is given a lower count and the cycle repeats.  When we reach zero, the final Thread points itself at the first one created and we have ourselves a ring.</p>
+			<p>If you haven't seen it before, this code makes heavy use of Ruby's Thread local variable accessors.  The short story is that you can treat a Thread as a Hash to access some Thread local storage.  So everywhere you see Thread.current above, James is accessing a Thread local variable for the currently running Thread.  Similarly, Thread.current[:next] gives us the next Thread in the ring.</p>
+			<p>Here's the second half of the Proc, the message passing code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">while</span> <span class="keyword">true</span><br />        Thread.stop<br />        msg = Thread.current[:message]<br />        cnt = Thread.current[:message_count]<br /><br />        Thread.current[:message] = <span class="keyword">nil</span><br />        Thread.current[:message_count] = <span class="keyword">nil</span><br /><br />        <span class="keyword">if</span> cnt == 0<br />          kill_processes<br />        <span class="keyword">else</span><br />          Thread.current[:<span class="keyword">next</span>][:message_count] = cnt - 1<br />          Thread.current[:<span class="keyword">next</span>][:message] = msg<br />          <span class="comment"># On small rings, the message can circle around before the</span><br />          <span class="comment"># first thread has stopped</span><br />          <span class="keyword">true</span> <span class="keyword">until</span> Thread.current[:<span class="keyword">next</span>].stop?<br />          Thread.current[:<span class="keyword">next</span>].run<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This works almost exactly like the code we just examined.  It stop()s the Thread, sets variables for the message and count, and taps the next Thread to run.  When the count is exhausted, all Threads simply exit.</p>
+			<p>The application code that kicks this process off is all we have left:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    processes, cycles = ARGV.map{|n| n.chomp.to_i}<br /><br />    <span class="global">$processes</span>.push(Thread.new(&amp;thread_proc))<br />    <span class="keyword">true</span> <span class="keyword">until</span> <span class="global">$processes</span>.first.stop?<br />    <span class="global">$processes</span>.first[:count] = processes - 1<br />    <span class="global">$processes</span>.first.run<br /><br />    puts <span class="string">"Creating #{processes} processes..."</span><br />    sleep(0.1) <span class="keyword">until</span> <span class="global">$processes</span>.length == processes<br /><br />    puts <span class="string">"Timer started."</span><br />    start_time = Time.new<br /><br />    puts <span class="string">"Sending a message around the ring #{cycles} times..."</span><br />    <span class="global">$processes</span>.first[:message_count] = processes * cycles<br />    <span class="global">$processes</span>.first[:message] = <span class="string">"Good day!"</span><br />    <span class="global">$processes</span>.first.run<br /><br />    sleep(0.1) <span class="keyword">while</span> <span class="global">$processes</span>.first.alive?<br /><br />    puts <span class="string">"Done."</span><br />    puts <span class="string">"Time in seconds: "</span> + (Time.new.to_i - start_time.to_i).to_s<br /><br /></div></div>
+			<p>Again, this code is much like what we have already examined.  The code here is simplified though, since it only needs to interact with the first Thread created.</p>
+			<p>I want to add a few observations about this code.</p>
+			<p>First, aside from the main Thread used to monitor the process, this code does not do any concurrent processing.  Each thread is stopped between message passes and restarted when it's time to do more work.  The code can be adapted to work concurrently, say if some processing was needed at each step, but we need to introduce some form of synchronization when we add that.  You can have a look at my own Threaded solution for one way to go about that.</p>
+			<p>The other point that surprised me about this code is that it's quite a bit slower than my own Threaded code.  I expected it to be much faster without the synchronization.  I'm guessing that all of that Thread stop()ping and run()ning slows things down a bit, but that's just a guess.</p>
+			<p>My thanks to the other solvers who sent in mighty clever code.  Be sure and have a look at those solutions as well.  Definitely don't miss the virtual machine in pure Ruby from Adam Shelly.</p>
+			<p>Tomorrow we will try some binary parsing...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265444">Tom Danielsen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265450">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265497">Tom Danielsen (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265559">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265704">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265815">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265866">Tom</a></li>
+			</ol>
+			<p><a href="quiz135_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

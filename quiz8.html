@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Object Browser (#8)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Object Browser (#8)</span>
+			<p>by Jim Menard</p>
+			<p>Recently on ruby-talk, itsme123 asked if there was a generic object browser that will "interactively browse a graph of connected objects by showing their instance variables and letting me click through to browse".</p>
+			<p>The quiz challenge: write such a browser. It should be able to start at any object or, if none is given to it, start at the main object ("self" at the top level of any Ruby script).</p>
+			<p>The interface to the browser can be text-based or graphical.</p>
+			<p>I'm thinking of something like the Squeak Explorer (the new inspector). It's a window that displays the object with an open/close triangle next to it. Click the triangle, and the ivars are exposed.</p>
+			<p class="example">V  root: an OrderedCollection(a MyClass, a Number)<br />   V 1: a MyClass<br />    &gt; name: 'the name'<br />    &gt; anotherIvar: 42<br />   &gt; 2: a Number</p>
+			<p>That's just one possible UI, of course.</p>
+			<p>Bonus points for allowing modification of instance variable values and for allowing inspection of classes (remember, classes are objects, too!).</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Brian Schr&ouml;der said:</p>
+			<p class="example">I always wanted to learn more about the reflection capabilites of ruby,<br />and indeed there is quite a lot to learn. This quiz was not too<br />complicated, but the design of a good gui takes a lot of time.<br />(Especially if you're not accustomed to the toolkit).</p>
+			<p>I agree and I think that about summarizes this quiz.</p>
+			<p>The main point of the quiz is using "reflection".  What is reflection?  To quote the Pragmatic Programmers:</p>
+			<p class="example">...to examine aspects of the program from within the program itself.</p>
+			<p>Obviously, to write an Object Browser, we would need to be able to learn things about objects we didn't design and create.  This technique has a lot of practical applications though and odds are even a new Ruby programmer has seen it in action.</p>
+			<p>Used tab completion in irb?  Built test cases with Test::Unit?  Both are great examples of tools that figure out your intentions by looking at Ruby code.  That's reflection.</p>
+			<p>So, how do we do all that?  I don't want to recreate a bunch of documentation here, but here are some methods to look up if you're new to Ruby's reflection capabilities:</p>
+			<p class="example"><a href="http://www.ruby-doc.org/core/classes/ObjectSpace.html#M001384">ObjectSpace.each_object</a><br /><br /><a href="http://www.ruby-doc.org/core/classes/Object.html#M000908">Object.class</a><br /><a href="http://www.ruby-doc.org/core/classes/Object.html#M000920">Object.methods</a><br /><a href="http://www.ruby-doc.org/core/classes/Object.html#M000925">Object.instance_variables</a><br /># and many more in Object<br /><br /><a href="http://www.ruby-doc.org/core/classes/Module.html#M000714">Module.ancestors</a><br /><a href="http://www.ruby-doc.org/core/classes/Module.html#M000692">Module.constants</a><br /><a href="http://www.ruby-doc.org/core/classes/Module.html#M000730">Module.class_variables</a><br /># and many more in Module</p>
+			<p>Putting such methods to use is pretty trivial.  Here's Brian's (original) code for building an object tree:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># Class Tree</span><br />    <span class="keyword">class</span> ClassTreeNode<br />      attr_accessor :klass, :subclasses, :objects<br /><br />      <span class="keyword">def</span> initialize(klass)<br />        <span class="variable">@klass</span> = klass<br />        <span class="variable">@subclasses</span> = {}<br />        <span class="variable">@objects</span> = []<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> add_class(klass)<br />        <span class="variable">@subclasses</span>[klass] ||= ClassTreeNode.new(klass)<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> add_object(object)<br />        <span class="variable">@objects</span> &lt;&lt; object<br />        <span class="keyword">self</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># Creates or updates a klass_tree.</span><br />    <span class="comment"># When updating no classes or objects are removed</span><br />    <span class="keyword">def</span> object_browser(classtree = ClassTreeNode.new(Kernel))<br />      ObjectSpace.each_object <span class="keyword">do</span> | x |<br />        classnode = classtree<br />        x.<span class="keyword">class</span>.ancestors.reverse[1..-1] \<br />        .inject(classtree){ | classnode, klass |<br />          classnode.add_class(klass)<br />        }.add_object(x)<br />      <span class="keyword">end</span><br />      classtree<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>object_browser() just assembles a "Class Tree" by walking ObjectSpace.each_object() and using ancestors() to find parent Classes/Modules.  (Note the clever use of inject().  Isn't that iterator cool?!)</p>
+			<p>The rest of Brian's solution (not shown) hands that Class Tree off to GUI routines, to build suitable displays.  These routines use more reflection methods to fetch method and variable lists.</p>
+			<p>Both solutions use gtk2 to manage their GUIs.  That involves no small amount of code and is a little beyond the scope of this summary, so I'll simply refer you to the solutions if you want to dig deeper.</p>
+			<p>I owe a big thanks to Jamis and Brian for pushing the quiz along this weekend while I was horribly busy.</p>
+			<p>All teasers for the next quiz have been censored out of this summary.</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121005">Jamis Buck</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121093">Brian Schr&ouml;der</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121357">Brian Schr&ouml;der (2)</a></li>
+			</ol>
+			<p><a href="quiz8_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

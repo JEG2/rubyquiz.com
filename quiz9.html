@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Banned Words (#9)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Banned Words (#9)</span>
+			<p>by Fredrik Jagenheim</p>
+			<p>At work we discovered that they installed a spam filter that throws away e-mail that it considers spam. It doesn't use any Bayes Filter, it simply checks for certain words that it considers 'banned'. One word we discovered was 'sex', which is a Swedish word for the number six. So the phrase "I'll be home at six o'clock." will be classified as spam, thrown away and never seen.</p>
+			<p>The Ruby Quiz I propose is to figure out which words are banned. Since the filter is a black box, we can only find out which words they are by sending email through it. The real problem is to find out how to do it with as *few* emails as possible.</p>
+			<p>Of course I don't want the ruby community to do a Denial-of-Service on my employer's mailserver, so do it as a local filter; perhaps something like this:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># by JEG2</span><br /><br />    <span class="comment">#</span><br />    <span class="comment"># A simple class for managing a filter that prevents to use</span><br />    <span class="comment"># of a given _banned_words_ list.</span><br />    <span class="comment">#</span><br />    <span class="keyword">class</span> LanguageFilter<br />        <span class="comment">#</span><br />        <span class="comment"># Create a new LanguageFilter object that will</span><br />        <span class="comment"># disallow _banned_words_.</span><br />        <span class="comment"># Accepts a list of words, arrays of words,</span><br />        <span class="comment"># or a combination of the two.</span><br />        <span class="comment">#</span><br />        <span class="keyword">def</span> initialize( *banned_words )<br />            <span class="variable">@banned_words</span> = banned_words.flatten.sort<br />            <span class="variable">@clean_calls</span> = 0<br />        <span class="keyword">end</span><br /><br />        <span class="comment"># A count of the calls to &lt;i&gt;clean?&lt;/i&gt;.</span><br />        attr_reader :clean_calls<br /><br />        <span class="comment">#</span><br />        <span class="comment"># Test if provided _text_ is allowable by this filter.</span><br />        <span class="comment"># Returns *false* if _text_ contains _banned_words_,</span><br />        <span class="comment"># *true* if it does not.</span><br />        <span class="comment">#</span><br />        <span class="keyword">def</span> clean?( text )<br />            <span class="variable">@clean_calls</span> += 1<br />            <span class="variable">@banned_words</span>.each <span class="keyword">do</span> |word|<br />                <span class="keyword">return</span> <span class="keyword">false</span> <span class="keyword">if</span> text =~ <span class="string">/\b#{word}\b/</span><br />            <span class="keyword">end</span><br />            <span class="keyword">true</span><br />        <span class="keyword">end</span><br /><br />        <span class="comment">#</span><br />        <span class="comment"># Verify a _suspect_words_ list against the actual</span><br />        <span class="comment"># _banned_words_ list.</span><br />        <span class="comment"># Returns *false* if the two lists are not identical or</span><br />        <span class="comment"># *true* if the lists do match.</span><br />        <span class="comment"># Accepts a list of words, arrays of words,</span><br />        <span class="comment"># or a combination of the two.</span><br />        <span class="comment">#</span><br />        <span class="keyword">def</span> verify( *suspect_words )<br />            suspect_words.flatten.sort == <span class="variable">@banned_words</span><br />        <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    filter = LanguageFilter.new <span class="string">"six"</span><br /><br />    filter.clean?(<span class="string">"I'll be home at six."</span>) <span class="comment"># =&gt; false</span><br />    filter.clean?(<span class="string">"Do not taunt the happy fun ball!"</span>) <span class="comment"># =&gt; true</span><br /><br />    filter.verify(<span class="string">"ball"</span>) <span class="comment"># =&gt; false</span><br />    filter.verify(<span class="string">"six"</span>) <span class="comment"># =&gt; true</span><br /><br />    filter.clean_calls <span class="comment"># =&gt; 2</span><br /><br /></div></div>
+			<p>So, figure out how to find the hidden words, using as few calls to LanguageFilter#clean? as possible.</p>
+			<p>Which algorithms do you find are effective when many words are blocked (like 10%) and which are effective when very few are blocked(1 in 20000)?</p>
+			<p>All solutions should do better than this: ;)</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    dict = [<span class="string">"foo"</span>, <span class="string">"bar"</span>, <span class="string">"six"</span>, <span class="string">"baz"</span>]<br />    filter = LanguageFilter.new <span class="string">"six"</span><br /><br />    p dict - (dict.dup.delete_if { |word| <span class="keyword">not</span> filter.clean?(word) })<br /></div></div>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>The general idea behind a lot of the solutions to this week's quiz was pretty basic.  Try a big list (probably the whole list, in this problem), if that gets blocked divide it into smaller lists and try again.</p>
+			<p>When one of these chunks of words gets through, we know that every words in that chunk was clean.  The higher up in our search that happens, the more work that saves us.  Because of that, this solution is ideal when there aren't a lot of banned words, as would probably be the case in the real world example of this quiz.</p>
+			<p>Here's my own solution as the most basic example of this process:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> isolate( list, test )<br />        <span class="keyword">if</span> test.clean? list.join(<span class="string">" "</span>)<br />            Array.new<br />        <span class="keyword">elsif</span> list.size == 1<br />            list<br />        <span class="keyword">else</span><br />            left, right = list[0...(list.size / 2)],<br />                          list[(list.size / 2)..-1]<br />            isolate(left, test) + isolate(right, test)<br />        <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>isolate() is a recursive routine that takes an Array of words and a test filter and returns the banned words.  If the entire words list passes a clean?() test, we return an empty Array (no banned words in the given list).  If we don't get an okay from clean?() and we only have one word in the list, we've found a banned word and we return the one word Array itself to show that.  Finally, if we didn't pass clean?() and we have more than one word, we divide the list in half, call isolate() on each half, and combine the results of both of those calls.  Eventually, this drills down to find all the banned words.</p>
+			<p>Of course, that's just the basics.  Wayne Vucenic found a very clever optimization.  If we check a big list and it gets banned, then we split it up and check the first half, which comes back clean, we know the second have would be banned and can skip the check.  That could save a significant amount of messages that we would otherwise need to send.</p>
+			<p>Brian Schr&ouml;der made a search for the optimal divisor for the word list, when breaking it into chunks.  Brian landed on 3 as the magic number, but there has been some follow up discussion on Ruby Talk about his findings and if they are complete.  Regardless, do download Brian's code to see just how much thought and effort he has put into it (and why he wants to sue me).</p>
+			<p>Jannis Harder didn't cut the word list in half at each step either.  I'm not sure exactly how Jannis arrived at the progression used, but it's an interesting scale:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="variable">@steps</span> =   [110000,700000,300000,200000,110000,<br />                70000,30000,20000,11000,7000,<br />                3000,2000,1100,700,300,200,110,<br />                70,30,20,11,7,3,2,1]<br /><br /></div></div>
+			<p>In my own testing, this doesn't seem to best Wayne's optimization though.</p>
+			<p>Jannis Harder did post a test framework that ended up being used by multiple entries.  I thought that was very helpful.</p>
+			<p>The final entry was by Michael Ulm, who used knowledge of the dictionary size and banned word probability to optimize the number of messages needed to find the banned words.  This is a nice example of what can be done with a little bit of knowledge, though that's probably not too likely in real world scenarios.</p>
+			<p>The main issue brought up in discussion was that my filter class had issues.  Several alternatives where proposed, each with their own issues.  Matching a word can be surprisingly tricky, when you take into account simple things like plurals, international characters, and apostrophes.  In the end, everybody seem to just use what they could live with.</p>
+			<p>My thanks to the submitters and discussers, informative as always.</p>
+			<p>We'll try a classic programming challenge tomorrow from Knuth...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121673">Wayne Vucenic</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121683">Brian Schr&ouml;der</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121703">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121707">Jannis Harder</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121717">Wayne Vucenic (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121729">Wayne Vucenic (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121775">Michael Ulm</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/121893">Michael Ulm (2)</a></li>
+			</ol>
+			<p><a href="quiz9_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - ID3 Tags (#136)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">ID3 Tags (#136)</span>
+			<p>The MP3 file format, didn't provide any means for including metadata about the song.  ID3 tags were invented to solve this problem.</p>
+			<p>You can tell if an MP3 file includes ID3 tags by examining the last 128 bytes of the file.  If they begin with the characters TAG, you have found an ID3 tag.  The format of the tag is as follows:</p>
+			<p class="example">TAG song artist album year comment genre</p>
+			<p>The spaces above are just for us humans.  The actual tags are fixed-width fields with no spacing between them.  Song, album, artist, and comment are 30 bytes each.  The year is four bytes and the genre just gets one, which is an index into a list of predefined genres I'll include at the end of this quiz.</p>
+			<p>A minor change was later made to ID3 tags to allow them to include track numbers, creating ID3v1.1.  In that format, if the 29th byte of a comment is null and the 30th is not, the 30th byte is an integer representing the track number.</p>
+			<p>Later changes evolved ID3v2 which is a scary beast we won't worry about.</p>
+			<p>This week's Ruby Quiz is to write an ID3 tag parser.  Using a library is cheating.  Roll up your sleeves and parse it yourself.  It's not hard at all.</p>
+			<p>If you don't have MP3 files to test your solution on, you can find some free files at:</p>
+			<p><a href="http://www.mfiles.co.uk/mp3-files.htm">mfiles</a></p>
+			<p>Here's the official genre list with some extensions added by Winamp:</p>
+			<p class="example">Blues<br />Classic Rock<br />Country<br />Dance<br />Disco<br />Funk<br />Grunge<br />Hip-Hop<br />Jazz<br />Metal<br />New Age<br />Oldies<br />Other<br />Pop<br />R&amp;B<br />Rap<br />Reggae<br />Rock<br />Techno<br />Industrial<br />Alternative<br />Ska<br />Death Metal<br />Pranks<br />Soundtrack<br />Euro-Techno<br />Ambient<br />Trip-Hop<br />Vocal<br />Jazz+Funk<br />Fusion<br />Trance<br />Classical<br />Instrumental<br />Acid<br />House<br />Game<br />Sound Clip<br />Gospel<br />Noise<br />AlternRock<br />Bass<br />Soul<br />Punk<br />Space<br />Meditative<br />Instrumental Pop<br />Instrumental Rock<br />Ethnic<br />Gothic<br />Darkwave<br />Techno-Industrial<br />Electronic<br />Pop-Folk<br />Eurodance<br />Dream<br />Southern Rock<br />Comedy<br />Cult<br />Gangsta<br />Top 40<br />Christian Rap<br />Pop/Funk<br />Jungle<br />Native American<br />Cabaret<br />New Wave<br />Psychadelic<br />Rave<br />Showtunes<br />Trailer<br />Lo-Fi<br />Tribal<br />Acid Punk<br />Acid Jazz<br />Polka<br />Retro<br />Musical<br />Rock &amp; Roll<br />Hard Rock<br />Folk<br />Folk-Rock<br />National Folk<br />Swing<br />Fast Fusion<br />Bebob<br />Latin<br />Revival<br />Celtic<br />Bluegrass<br />Avantgarde<br />Gothic Rock<br />Progressive Rock<br />Psychedelic Rock<br />Symphonic Rock<br />Slow Rock<br />Big Band<br />Chorus<br />Easy Listening<br />Acoustic<br />Humour<br />Speech<br />Chanson<br />Opera<br />Chamber Music<br />Sonata<br />Symphony<br />Booty Bass<br />Primus<br />Porn Groove<br />Satire<br />Slow Jam<br />Club<br />Tango<br />Samba<br />Folklore<br />Ballad<br />Power Ballad<br />Rhythmic Soul<br />Freestyle<br />Duet<br />Punk Rock<br />Drum Solo<br />A capella<br />Euro-House<br />Dance Hall</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This quiz was another idea I got out of the Erlang book.  The author uses a similar example to show how smooth processing binary data in Erlang can be.  I'm happy to say that I found the submitted Ruby solutions to be equally smooth, if not more so.</p>
+			<p>The secret to binary parsing in Ruby is generally the String.unpack() method and the majority of the solutions capitalized on this technique.  Technically, ID3 tags are mainly in plain text, with some null characters thrown in.  Still, I think it's a good idea to get into the unpack() mindset anytime you start slicing up binary data.</p>
+			<p>I want to take a look at Eugene Kalenkovich's code below.  It's a pretty typical usage of unpack() to parse some data.  It also includes a nicety when reading the file that I'm ashamed to admit I didn't think of.  Let's start with that:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> fileTail (file, offset)<br />      f=File.new(file)<br />      f.seek(-offset,IO::SEEK_END)<br />      f.read<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>In my own code, I read the whole file into memory and indexed out the last 128 bytes.  That's almost always the wrong approach and Eugene shows the correct strategy above.  This code just opens the file, seek()s to offset bytes before the end, and read()s the needed data.  That scales much better when the data sizes are significant.</p>
+			<p>As a quick aside, file_tail() would probably be a more Rubyish method name.</p>
+			<p>The code now builds a data structure class to hold the tag details.  It starts like this:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">class</span> ID3Tag<br />      GENRES=[<span class="string">"Blues"</span>,<span class="string">"Classic Rock"</span>,<span class="string">"Country"</span>,…,<span class="string">"Dance Hall"</span>]<br />      attr_reader :title, :artist, :album, :year, :comment, :genre, :track<br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>You can see that this class is mainly just a data structure that defines readers for all of the elements in a tag.  I've trimmed the GENRES listing here, but the code included the full set.</p>
+			<p>I will say that some found more clever means to load the GENRES Array.  Several people did fancy heredoc manipulations, but the most clever pulled the list out of the quiz document using open-uri and hpricot.  That was especially wise this time since I made so many mistakes in the quiz description.</p>
+			<p>We're now ready for the actual parsing code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> initialize fname<br />        tag,<span class="variable">@title</span>,<span class="variable">@artist</span>,<span class="variable">@album</span>,<span class="variable">@year</span>,<span class="variable">@comment</span>,<span class="variable">@genre</span>=<br />          fileTail(fname,128).unpack <span class="string">"A3A30A30A30A4A30C"</span><br />        raise <span class="string">"No ID3 Info"</span> <span class="keyword">if</span> tag!=<span class="string">'TAG'</span><br />        s_com,flag,track=<span class="variable">@comment</span>.unpack <span class="string">"A28CC"</span><br />        <span class="keyword">if</span> flag==0 <span class="keyword">and</span> track!=0<br />          <span class="variable">@comment</span>=s_com<br />          <span class="variable">@track</span>=track<br />        <span class="keyword">end</span><br />        <span class="variable">@genre</span>=GENRES[<span class="variable">@genre</span>]<br />        <span class="variable">@genre</span>=<span class="string">"Unknown"</span> <span class="keyword">if</span>  !<span class="variable">@genre</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>As you can see, the majority of the work is done on the first line with a single call to unpack().  The template fed to unpack() is the key to the whole puzzle.  An "A" in the unpack() template instructs it to extract a String, removing any trailing spaces or null characters.  By default the String is just one character long, but you can provide a number after the "A" to increase that count.  The only other character used in the template is a "C" which is used to extract one character as an unsigned Integer.  The unpack() call returns an Array which Eugene just mass-assigns to the relevant variables.</p>
+			<p>The rest is simple.  The code checks the first chunk for the identifying "TAG" String and throws an error if it's not there.  Then another call to unpack(), with a template much like the first, pulls the track field out of the comment.  The if statement makes sure that assignment only happens when it is present.  The final two lines are just a longhand form of:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="variable">@genre</span> = GENRES[<span class="variable">@genre</span>] || <span class="string">"Unknown"</span><br /><br /></div></div>
+			<p>With all of the fields stored away in the proper variables, reader calls can be used to extract as needed.  Eugene's actual application code just punted on that point though:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    p ID3Tag.new(ARGV[0])<br /><br /></div></div>
+			<p>My thanks to all who have helped me with my Erlang comparisons these last two weeks.  I promise, we're on to new topics now.</p>
+			<p>In fact, tomorrow we will tackle an interesting subproblem from this year's ICFP contest...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266289">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266296">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266298">Jesse Merriman (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266311">Come</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266316">Brad Ediger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266324">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266326">Borja Mart&iacute;n</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266333">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266334">Come</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266336">Ken Bloom (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266350">Tom Metge</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266364">Erik Bryn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266371">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266378">Juan Matias Repetti</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266398">Eugene Kalenkovich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266431">Matt Pruitt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266450">Alpha Chen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266451">John Miller</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/266766">Matthew Moss</a></li>
+			</ol>
+			<p><a href="quiz136_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

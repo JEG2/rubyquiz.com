@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - English Numerals (#25)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">English Numerals (#25)</span>
+			<p>by Timothy Byrd</p>
+			<p>While we normally write numbers using Arabic (or since Quiz #22, Roman) numerals, numbers can also be written out as English phrases.</p>
+			<p>For example:</p>
+			<p class="example">7    == seven (the hard way)<br />42   == forty-two (a very important number)<br />2001 == two thousand and one (a space odyssey)<br />1999 == (party like it's) nineteen hundred and ninety-nine</p>
+			<p>So the quiz is a problem from a Pi Mu Epsilon (US national math club) newsletter:</p>
+			<p>"When the integers 1 to 10_000_000_000 are written in the English language, then sorted as strings, which odd number appears first in the list?"</p>
+			<p>Your mission, should you choose to accept it, is to:</p>
+			<p>- Create Ruby code to translate a number to it's English language form. (My sample version works with integers up to 10**72-1.)</p>
+			<p>- Determine programmatically which odd number in 1..10_000_000_000 would sort first if written in English. (Brute force is the obvious solution, but the computer may have to think about it...)</p>
+			<p>- Would the answer change for a larger range of values, say 10**30?</p>
+			<p>- Do French and German Rubyists get a different answer than the Americans?</p>
+			<p>Extra credit:</p>
+			<p>-Add a <a href="http://www.mandarintools.com/numbers.html">Pinyin translator</a>.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>by Timothy Byrd</p>
+			<p>When writing numbers using Arabic numerals, we customarily group them
+into phrases or clauses of three digits each.  These clauses are
+identical and are separated by scaling factors such as 'thousand' and
+'billion'. All the solutions took advantage of this repetition, though
+I'd given irregular examples such as 'twelve hundred' or using 'and'
+to separate the final tens and ones from the rest of the number.</p>
+			<p>Most of the solutions (though not mine, infamously) extended the
+integer class to have a method for translating the number to English.</p>
+			<p>Eliah Hecht submitted the first solution.  He extended the Integer
+with a to_en method.  Unlike the others, he only had an array for
+the numbers 1..9 and defined methods to build items like seventeen or
+sixty from their component syllables.  His general method was to
+convert the number to a string and split off the initial clause,
+generate the English form of that with a degree suffix and concatenate
+the result of a recursive call on the remaining part of the number.</p>
+			<p>He put in the 'and's, and his reasoned out answer of "eight billion
+and eighty-five" was - I'm chagrined to say - more correct than my
+"eight billion eight hundred and eighty-five".  (Including 'and'
+really screws up a recursive or iterative approach - or at least my
+approach - to building the number, since you don't include the 'and'
+without something in front of it that you may want to replace later.)</p>
+			<p>Glenn Parker gave the next solution, noting: "I'm afraid I could not
+bring myself to code up some random ill-defined method of expressing
+numbers in English, so I did it the way I was taught in school, using
+hypens and absolutely no "ands" or commas.  I think I've got Strunk &amp;
+White on my side.  Regardless, I'll be somewhat surprised if my answer
+comes out very different from others."</p>
+			<p>A spirited defense of the purity of the English language.  And his
+thoughts on finessing around the brute force approach are worth
+quoting:</p>
+			<p>'Every number from 1 to 10**10 can be expressed in English as a
+concatenation of one or more independent phrases.  Each phrase
+expresses the value of a triplet of numerals from the original number.
+For example, 56_106_021 uses three phrases: "fifty-six million" for
+the millions triplet (56), "one hundred six thousand" for the
+thousands triplet (106), and "twenty-one" for the ones triplet (021).
+I don't allow "twelve hundred" for 1200, but I think it would only
+complicate the logic slightly to handle this.</p>
+			<p>'I proceed to find the lowest possible phrase for each of the four
+triplets in the range of interest.  It must be possible to express the
+lowest number name using a subset of the lowest possible phrases for
+each triplet.  And since the desired number must be odd, valid subsets
+will all end with the ones triplet phrase.</p>
+			<p>'The ones triplet range has only 500 phrases: the odd numbers from 1
+to 999.  The thousands triplet has 1000 phrases: the multiples of 1000
+from 1000 to 999_999.  Likewise, the millions triplet has 1000
+phrases.  The billions triplet has only ten phrases because we stop
+caring after 10_000_000_000 (instead of going to 999_999_999_999).
+Finding the four lowest phrases for each triplet requires examining
+only 2510 numbers.  There are only eight combinations of the resulting
+four phrases that represent an odd number.</p>
+			<p>'The result: "eight billion eight hundred eight million eight hundred
+eight thousand eight hundred eighty-five".'</p>
+			<p>His code is concise. He effectively splits up the number into clauses
+or phrases in a single line by splitting it into an array of
+individual digits, and then processes them by grabbing three at a time
+from the bottom.</p>
+			<p>Matthew D Moss did a Japanese translator in addition to the English
+one.  He implemented his Integer.to_spoken to accept a translator as
+an optional argument - used as a function object.</p>
+			<p>Dave Burt used code from "[his] translation of the Perl modules
+Number::Spell and Lingua::EN::Numericalize (see CPAN)". He also
+comments:</p>
+			<p>'My answer is that "a baker's dozen" comes immediately before "a
+billion, a hundred and eight thousand, a hundred and eighty five". I
+haven't yet enhanced my program to give me this result :)'</p>
+			<p>Patrick Hurley applied some logic to his solution, pruning his search
+space down to: "numbers ending in 5 and having a combination of 0 and
+8's".</p>
+			<p>Nikolai Weibull commented "My Lisp module proves yet again to be
+capable of answering a Ruby Quiz".</p>
+			<p>As for me, I discovered how horribly slow my solution was.  I was able
+to improve it by an order of magnitude - from just over five seconds
+to just over half a second.  Most of the gain was from changing one
+routine:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> <span class="keyword">self</span>.to_English(val, eu_names = <span class="keyword">true</span>, include_and = <span class="keyword">true</span>)<br />        v = val.to_i.abs<br />        <span class="keyword">return</span> <span class="string">"zero"</span> <span class="keyword">if</span> v == 0<br />        include_and = <span class="keyword">false</span> <span class="keyword">if</span> v &lt;= 100<br />        exp_hash = eu_names ? EurExponents : AmExponents<br /><br />        a = []<br />        (a.push v % 1000; v /= 1000) <span class="keyword">while</span> v &gt; 0<br /><br />        r = <span class="string">''</span><br /><br />        <span class="comment"># allow for numbers like 'twelve hundred'</span><br />        <span class="comment">#</span><br />        <span class="keyword">if</span> a[1] == 1 <span class="keyword">and</span> a[0]  &gt;= 100 <span class="keyword">then</span><br />            a[1] = 0<br />            a[0] += 1000<br />        <span class="keyword">end</span><br /><br />        a.each_with_index {|obj, i|<br />            <span class="keyword">next</span> <span class="keyword">if</span> obj == 0<br />            r = <span class="string">"#{to_English_base(obj, include_and &amp;&amp; \<br />                i == 0)} #{exp_hash[i]}"</span>.strip + <span class="string">" #{r}"</span><br />            }<br /><br />        r.strip<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>I used to counting down through the entire exponent table for each
+number testing if the number were larger than 10**exponent.  I now
+chop the number up into three digit chunks and iterate up through the
+chunks.  (Note that I've also changed all my hashes to arrays, but
+they only helped by a few percentage points.)  At first I thought this
+code wouldn't support numbers like 'twelve hundred', but it turn out
+to take just a few lines.  It's a textbook example that one
+well-placed optimization at the end can make a world of difference.</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/135446">Eliah Hecht</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/135449">Glenn Parker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/135455">Matthew D Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/135488">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/135636">Patrick Hurley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/135735">Timothy Byrd</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/135769">Nikolai Weibull</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/137190">Todd Nathan</a></li>
+			</ol>
+			<p><a href="quiz25_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

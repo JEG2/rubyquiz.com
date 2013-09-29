@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - FizzBuzz (#126)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">FizzBuzz (#126)</span>
+			<p>There has been some debate on the proper ways to screen programmers you intend to hire.  A common theory is that you really need to have the programmer write some code for you to accurately gauge their skill.  Exactly what to have them write is another debate, but the blogosphere has recently been abuzz with this question as a screener:</p>
+			<p class="example">Write a program that prints the numbers from 1 to 100.<br />But for multiples of three print “Fizz” instead of the<br />number and for the multiples of five print “Buzz”. For<br />numbers which are multiples of both three and five<br />print “FizzBuzz”.</p>
+			<p>Pretend you've just walked into a job interview and been hit with this question.  Solve it as you would under such circumstances for this week's Ruby Quiz.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>The discussion around this quiz touched on what the interviewer is actually looking for when they ask this question.  Most people seem to agree that at least one goal is to establish that you are capable of writing some code.</p>
+			<p>The other item we assume the interviewers are searching for is some degree of cleverness.  The interesting thing is that we don't seem to agree on the amount of cleverness.  Some feel you should provide a no-nonsense solution, solving the problem just as you would if it was a small part of your work for the day.  Others feel it's better to let your style flare a bit and show off unusual approaches to solving the problem.  The solutions covered both approaches very well.</p>
+			<p>I'll start with my own, just because I can explain my thinking behind it.  Here's the code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -w</span><br /><br />    1.upto(100) <span class="keyword">do</span> |i|<br />      <span class="keyword">if</span> i % 5 == 0 <span class="keyword">and</span> i % 3 == 0<br />        puts <span class="string">"FizzBuzz"</span><br />      <span class="keyword">elsif</span> i % 5 == 0<br />        puts <span class="string">"Buzz"</span><br />      <span class="keyword">elsif</span> i % 3 == 0<br />        puts <span class="string">"Fizz"</span><br />      <span class="keyword">else</span><br />        puts i<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The interesting part of this solution is what happened in my head.  When I began to code it up and realized the combined test would need to come first, I experienced a brief moment of doubt in my logic and considered writing some tests.  After a calming breath, I convinced myself that this problem was easy enough to not worry about them.  I was confident I was right, though this problem is about the upper limit of what I am comfortable doing without tests and I might have caved-in easier under the pressure of a real interview.  For a nice test-driven solution do look over Jason Merrill's response to the quiz.</p>
+			<p>There's nothing tricky in my code, of course.  I walk the numbers and perform divisibility tests to decide what to print.  Many solutions took a very similar approach with minor variations.  One such variation was to change the first divisibility check to:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">if</span> n % 15 == 0                           <span class="comment"># darrin kirby's code</span><br /><br />    <span class="comment"># ... or ...</span><br /><br />    <span class="keyword">when</span> num.dividable_by?(3*5): <span class="string">"fizzbuzz"</span>  <span class="comment"># Rene Koning's code</span><br /><br /></div></div>
+			<p>My opinion was that the two test approach was a more self-documenting way to code it up, but I found Rene's solution to be a good balance.</p>
+			<p>Looking back on my code now that I've examined over 70 solutions, I'm painfully aware of how much duplication there is in it.  I repeat the divisibility tests and the calls to puts() in almost every branch.  A lot of solutions DRYed that code up.  Two common ways to do it were to pre-calculate the divisibility tests and to move puts() outside of the if/case statements.  Here's some code from Bill Guindon that shows off both tricks:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    (1..100).each <span class="keyword">do</span> |x|<br />     m3 = x.modulo(3) == 0<br />     m5 = x.modulo(5) == 0<br /><br />     puts <span class="keyword">case</span><br />       <span class="keyword">when</span> (m3 <span class="keyword">and</span> m5) <span class="keyword">then</span> <span class="string">'FizzBuzz'</span><br />       <span class="keyword">when</span> m3 <span class="keyword">then</span> <span class="string">'Fizz'</span><br />       <span class="keyword">when</span> m5 <span class="keyword">then</span> <span class="string">'Buzz'</span><br />       <span class="keyword">else</span> x<br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>You can see we're down to a single call to puts() here and The results of the tests are cached for convenient reuse.  I think that's an improvement.</p>
+			<p>We do still have duplication here too though, on a smaller scale.  First, the test results are still checked multiple times.  That's not as bad as redoing the whole test, but it would be nice if it wasn't needed.  More importantly, the 'Fizz' and 'Buzz' Strings are repeated in the 'FizzBuzz' String.  Obviously, there is still room for DRYing things up.</p>
+			<p>Daniel Martin sent in a good example of code that only does each step once:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    (1..100).each{|i|<br />      x = <span class="string">''</span><br />      x += <span class="string">'Fizz'</span> <span class="keyword">if</span> i%3==0<br />      x += <span class="string">'Buzz'</span> <span class="keyword">if</span> i%5==0<br />      puts(x.empty? ? i : x);<br />    }<br /><br /></div></div>
+			<p>Here the output is built up piece by piece.  A divisible by three check adds the 'Fizz' and divisible by five the 'Buzz'  If the number happens to be divisible by both they will be combined to yield 'FizzBuzz'  From there, a quick check is needed to see if the String is still empty?(), meaning that we should output the digit instead.</p>
+			<p>It's short code, easy to follow, and it doesn't give me any doubts about it's functionality.  I think it's a solid approach to take.</p>
+			<p>Of course, if you're a fan of clever, don't miss MenTaLguY's lambda calculus solution.</p>
+			<p>My thanks to everyone who blew the quiz record out of the water time around!  I'll be looking for more boring problems now just because staying on top of the submissions was a real challenge.  ;)</p>
+			<p>Tomorrow we will show just how versatile Ruby programmers can be and weave a few blankets...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254073">Sun Park</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254077">Enrique Comba Riepenhausen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254078">Peter Seebach</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254083">Dave</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254084">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254086">Robert Dober (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254087">Craig Demyanovich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254088">Morton Goldberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254089">anansi</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254091">Todd Benson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254092">Todd Benson (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254093">Don Levan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254094">I. P.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254095">Michael Glaesemann</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254098">Bill</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254100">Bill Guindon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254104">Joshua Ballanco</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254107">Rick DeNatale</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254108">Fred Phillips</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254110">Michael Glaesemann (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254114">Sun Park (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254118">Patrick Hurley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254119">Chris Carter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254122">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254128">Yossef Mendelssohn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254129">Brian Candler</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254130">Ryan Leavengood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254131">Brian Candler (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254132">Christian Roese</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254134">paddor</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254135">Gregory Brown</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254138">darren kirby</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254139">Daniel Martin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254143">Robert Dober (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254144">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254145">Dave Patterson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254146">Rene Koning</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254147">Steven Soroka</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254148">Jared Haworth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254149">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254150">James Whiteman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254151">Colin A. Bartlett</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254153">Ben Atkin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254154">Rick DeNatale (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254156">David A. Black</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254157">Drew Olson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254158">philip</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254159">Douglas Meyer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254165">Sergey Volkov</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254166">Ari Brown</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254169">Ari Brown (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254175">Pieter V.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254194">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254197">Kevin Barnes</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254199">Robert Dober (4)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254207">^-FakE-^ fake-or-dead</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254209">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254210">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254212">Matthew Moss (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254216">Frederico Zagarzaz&uacute;</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254225">Ruben Medellin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254273">Donald Ball</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254277">Mike Moore</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254282">harlan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254289">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254295">Ruben Medellin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254318">Ivo Dancet</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254348">Bill Kelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254352">Peter Cooper</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254354">Daniel Martin (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254459">MenTaLguY</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254485">Daniel Finnie</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254488">MenTaLguY (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254506">Jason Merrill</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254543">Brad Phelan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254581">Joshua Ballanco (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254612">Brian Adkins</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254671">Daniel N</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254677">Ryan Sobol</a></li>
+			</ol>
+			<p><a href="quiz126_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

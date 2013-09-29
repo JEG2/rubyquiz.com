@@ -1,0 +1,66 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Posix Pangrams (#97)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Posix Pangrams (#97)</span>
+			<p>by Martin DeMello</p>
+			<p>A pangram is a sentence containing every letter of the alphabet at least once (a famous example in English being "the quick brown fox jumps over the lazy dog"). For maximum style points a pangram should read smoothly, and have both as few repeated letters as possible (ideally zero), and as few words as possible.</p>
+			<p>This quiz extends the idea to the <a href="http://www.unix.org/version3/apis/cu.html">posix utilities</a> - write a program to find pangrammatic collections of posix utilities that (1) use the fewest utilities and (2) have the minimum number of repeated letters. In either case, break ties on the other criterion; that is, your first solution should also have as few repeated letters as possible, and your second one should use as few utilities as possible.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This problem turns out to be pretty tough.  Finding the best pangram for a given constraint can be NP-Hard, as explained by Ken Bloom:</p>
+			<p><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/219003">NP-Hard Reduction</a></p>
+			<p>Given that, we're just interested in code that gets reasonably close to ideal results in a decent amount of time.  All of the submissions did that quite well, but I want to show off Ezwan Aizat Bin Abdullah Faiz's code below.  I've Rubyified it just a bit, but the code still works the same.  For reference, it finds this pangram in under a second on my box:</p>
+			<p class="example">String: zcat jobs newgrp mv qhold tty uux mkfifo <br />Panagram? true<br />Words? 8<br />Length? 33<br />Dupes? 7</p>
+			<p>Let's start with the easy stuff:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/ruby</span><br /><br />    <span class="comment"># removed c99 fort77 m4</span><br />    words = <span class="string">%w[ admin alias ar asa at awk basename batch bc bg cal cat cd<br />                cflow chgrp chmod chown cksum cmp comm command compress cp<br />                crontab csplit ctags cut cxref date dd delta df diff dirname<br />                du echo ed env ex expand expr false fc fg file find fold<br />                fuser gencat get getconf getopts grep hash head iconv id<br />                ipcrm ipcs jobs join kill lex link ln locale localedef logger<br />                logname lp ls mailx make man mesg mkdir mkfifo more mv newgrp<br />                nice nl nm nohup od paste patch pathchk pax pr printf prs ps<br />                pwd qalter qdel qhold qmove qmsg qrerun qrls qselect qsig<br />                qstat qsub read renice rm rmdel rmdir sact sccs sed sh sleep<br />                sort split strings strip stty tabs tail talk tee test time<br />                touch tput tr true tsort tty type ulimit umask unalias uname<br />                uncompress unexpand unget uniq unlink uucp uudecode uuencode<br />                uustat uux val vi wait wc what who write xargs yacc zcat ]</span><br />    words_line = words.join(<span class="string">" "</span>)<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This code begins by filling an Array with the Posix utilities, except for the three that contain digits in their names.  Everyone dropped these to keep things simple.  Note that the words are also joined to form one long line of utility names.</p>
+			<p>Next we need to enhance String a bit with some capabilities we will need to do our work:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">class</span> String<br />      <span class="keyword">def</span> letters(&amp;block)<br />        scan(<span class="string">/[a-z]/</span>, &amp;block)<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> pangram?<br />        letters.uniq.length == 26<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> duplicated_letters<br />        seen = Hash.new { |found, char| found[char] = 1; 0 }<br />        letters.inject(0) { |sum, l| sum + seen[l] }<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>We will need easy access to an Array of letters (without the spaces), so a simple wrapper is created over scan().  From there we can check pangram status by ensuring that we have 26 unique letters.  Finally, when printing statistics it would be nice to be able to see how many letters are duplicates, so we add a method for that too.</p>
+			<p>Now the code builds up some handy constants in preparation for the search:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    OCCURRENCE = Hash.new { |counts, char| counts[char] = 0 }<br />    words_line.letters { |char| OCCURRENCE[char] += 1 }<br /><br />    WORDS_LENGTH = words_line.delete(<span class="string">" "</span>).length<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Here we see the OCCURRENCE Hash being filled.  It will be the key to the search algorithm.  The Hash is simply a count of how many times each letter is present in all of the names.  "e" appears the most at a count of 62 times and "z" is present only once.</p>
+			<p>Another constant is filled with the overall character count.</p>
+			<p>Here's a method used to print statistics when we have our answer:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> stats(line)<br />      puts <span class="string">"String: #{line}"</span><br />      puts <span class="string">"Pangram? #{line.pangram?}"</span><br />      puts <span class="string">"Words? #{line.split.length}"</span><br />      puts <span class="string">"Length? #{line.delete(' ').length}"</span><br />      puts <span class="string">"Dupes? #{line.duplicated_letters}"</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>I think that one is pretty self documenting.</p>
+			<p>We're finally ready for the primary search algorithm and here it comes:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment">=begin<br />     Suitability should be determined by<br />      * least number of letters takes out the length of the computer<br />      * no used letters<br />      * no duplicates<br />    =end</span><br />    <span class="keyword">def</span> suitability(value, line)<br />      amount, used = 0, <span class="string">""</span><br /><br />      value.letters <span class="keyword">do</span> |char|<br />        amount += <span class="keyword">if</span> used.include?(char) || line.include?(char)<br />          -OCCURRENCE[char]<br />        <span class="keyword">else</span><br />          WORDS_LENGTH / OCCURRENCE[char]<br />        <span class="keyword">end</span><br />        used &lt;&lt; char<br />      <span class="keyword">end</span><br /><br />      amount<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method grades the passed value for inclusion in the line.  Each letter is scored, creating an overall suitability rating for this value.</p>
+			<p>If the letter is already in the line or the letters we have seen so far from this value, the OCCURRENCE value for that letter is tacked onto the score as a penalty.  This ensures the duplicates, especially of common letters, are costly so the code will try to avoid them.</p>
+			<p>If this is the first time the letter has been encountered, the score is the OCCURRENCE for that letter divided into the total letter count.  This makes it valuable for the code to place letters like the "z" early on, since we don't have any choices on that one and thus will also need to accept the letters it comes with.</p>
+			<p>Here's the final piece of the puzzle, where we see suitability() put to work:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    line = <span class="string">""</span><br /><br />    <span class="keyword">until</span> line.pangram?<br />      words.sort! <span class="keyword">do</span> |x, y|<br />        suitability(y, line) &lt;=&gt; suitability(x, line)<br />      <span class="keyword">end</span><br /><br />      line += <span class="string">"#{words.shift} "</span><br />    <span class="keyword">end</span><br /><br />    stats line<br /><br /></div></div>
+			<p>The process is easy to follow here.  First an empty line is created.  Then we loop until the line has become a pangram.  At each step, the utility list is sorted by suitability() and the best word added to the line.  Just before exit, the program dumps the statistics as the result.</p>
+			<p>My thanks to all you pangram hunters.  As always you taught me clever new tricks in optimization.</p>
+			<p>Tomorrow we'll play with the king of pathfinding algorithms...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/218634">red</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/218683">Morton Goldberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/218721">Morton Goldberg (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/218725">Ezwan Aizat Bin Abdullah Faiz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/218763">Cameron Pope</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/218880">Ezwan Aizat Bin Abdullah Faiz (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/219114">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/219520">Timothy Goddard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/219675">Christian Neukirchen</a></li>
+			</ol>
+			<p><a href="quiz97_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

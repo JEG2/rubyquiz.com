@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Getting to 100 (#119)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Getting to 100 (#119)</span>
+			<p>by Gavin Kistner</p>
+			<p>The NPR show "Car Talk" has regular quizzes that they call <a href="http://www.cartalk.com/content/puzzler/2007.html">"Puzzlers"</a>. The one listed on their web site for March 12th is titled <a href="http://www.cartalk.com/content/puzzler/transcripts/200711/index.html">"Getting to 100"</a>. In the quiz, you are supposed to write down the digits 1-9 in order, followed by " = 100", and then insert between them two minus symbols and one plus symbol (in any order) to make the formula correct. You aren't allowed to re-arrange digits, or do some toothpick math like combine two minus signs to make a plus. You must use every digit, and all three operators. For example, here's one incorrect solution:</p>
+			<p class="example">123 + 45 - 67 - 89 = 100  (This is an incorrect formula; it totals 12)</p>
+			<p>The quiz, then, is to solve this problem without thinking, instead letting the computer think for you. Your program should output every possible equation that can be formed, and the actual result of that equation. The equation that results in 100 should have stars around it. At the end, you should print out the number of formulae that were possible. Here's an excerpt of some example output:</p>
+			<p class="example">...<br />12 - 34 - 567 + 89 = -500<br />12 - 34 + 567 - 89 = 456<br />12 + 34 - 567 - 89 = -610<br />************************<br />123 - 45 - 67 + 89 = 100<br />************************<br />123456 - 7 - 8 + 9 = 123450<br />123456 - 7 + 8 - 9 = 123448<br />123456 + 7 - 8 - 9 = 123446<br />...<br />168 possible equations tested</p>
+			<p>You should not print the same equation more than once. ("1 - 2 - 3 + 456789" is the same as "1 - 2 - 3 + 456789", even if the computer thinks that the two minus symbols come in a different order.)</p>
+			<p>Extra Credit: Write your program to accept an arbitrary number and ordering of digits, an arbitrary set of operators (but allowing the same operator more than once), and an arbitrary target number that the equation is supposed to evaluate to.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This was a popular problem and we saw many different ways to go about solving it.  The discussion on the mailing list was also very good, with many ideas shared and explained.</p>
+			<p>I'm going to go through a few solutions today, because they are not overly long and I think we can learn something from each of them.  Let's begin with some code by Dennis Frommknecht.  Here's the entire solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -W</span><br /><br />    <span class="comment"># This solution uses 3 nested loops to divide the </span><br />    <span class="comment"># numbers into 4 groups (using regular expressions). </span><br />    <span class="comment"># Then the 3 allowed combinations of plus and minus</span><br />    <span class="comment"># are inserted between the groups.</span><br />    <span class="comment"># Finally the result is calculated using eval</span><br /><br />    NUMBERS = <span class="string">"123456789"</span><br />    CORRECT_RES = 100<br />    OPS = [[<span class="string">'+'</span>, <span class="string">'-'</span>, <span class="string">'-'</span>],<br />           [<span class="string">'-'</span>, <span class="string">'+'</span>, <span class="string">'-'</span>],<br />           [<span class="string">'-'</span>, <span class="string">'-'</span>, <span class="string">'+'</span>]]<br /><br />    num_of_ops = OPS[0].length<br />    equ_counter = 0<br /><br />    1.upto(NUMBERS.length - num_of_ops) <span class="keyword">do</span> |i|<br />    1.upto(NUMBERS.length - num_of_ops - i + 1) <span class="keyword">do</span> |j|<br />    1.upto(NUMBERS.length - num_of_ops - i + 1 - j + 1) <span class="keyword">do</span> |k|<br />      <span class="keyword">if</span> NUMBERS.match(<span class="string">/(\d{#{i}})(\d{#{j}})(\d{#{k}})(\d+)/</span>) <span class="keyword">then</span><br />        OPS.each <span class="keyword">do</span> |o|<br />          command = <span class="string">"#{$1} #{o[0]} #{$2} #{o[1]} #{$3} #{o[2]} #{$4}"</span><br />          res = eval command<br />          equ_counter += 1<br />          puts <span class="string">"*"</span> * 15 <span class="keyword">if</span> res == CORRECT_RES<br />          puts <span class="string">"#{command} = #{res}"</span><br />          puts <span class="string">"*"</span> * 15 <span class="keyword">if</span> res == CORRECT_RES<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br />    <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    puts <span class="string">"#{equ_counter} possible equations tested"</span><br /><br /></div></div>
+			<p>There are really two aspects to solving the base quiz.  First, you need to find the possible permutation of the operators.  There are really only three orders they can come up in and Dennis chose to just hardcode those in the OPS constant.</p>
+			<p>The other problem is about partitioning.  You need to divide the digits into four groupings that you can insert the three operators between.  Again, Dennis pretty much hardcoded the logic for this using three nested iterators.  The interesting side of this solution though is how they work.</p>
+			<p>Basically, Dennis just counts off some number of digits from the front of the line.  Then he counts of some number of digits after that.  A third count is made for some number of digits after that, ensuring we leave at least one at the end.  This gives us three lengths, which one Regexp turns into four groups.  From there, the expression is constructed, eval()ed to get an answer, and finally printed.</p>
+			<p>This solution does a good job of showing the process, but there are some shortcuts to be found.  For example, if you move from considering just the ordering of the three operators to the actual positioning of the three operators, you can drop the partitioning step altogether.</p>
+			<p>Let me use Paul's code to show you what I mean:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> String<br />      <span class="keyword">def</span> unique_permutations<br />        <span class="comment"># modified to get unique permutations from</span><br />        <span class="comment"># http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/139858</span><br />        <span class="comment"># which says it was inspired by a RubyQuiz! :)</span><br />        <span class="keyword">return</span> [<span class="keyword">self</span>] <span class="keyword">if</span> <span class="keyword">self</span>.length &lt; 2<br />        perms = Hash.new<br /><br />        0.upto(<span class="keyword">self</span>.length - 1) <span class="keyword">do</span> |n|<br />          rest = <span class="keyword">self</span>.split(<span class="string">//</span>u)            <span class="comment"># for UTF-8 encoded strings</span><br />          picked = rest.delete_at(n)<br />          rest.join.unique_permutations.each { |x| perms[picked + x] = <span class="keyword">nil</span> }<br />        <span class="keyword">end</span><br /><br />        perms.keys<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    digits = ARGV[0]<br />    ops = ARGV[1]<br />    target = ARGV[2].to_i<br /><br />    <span class="comment"># pad ops list with spaces to match the number of slots between the digits</span><br />    ops = ops + <span class="string">" "</span> * (digits.size - ops.size - 1)<br /><br />    <span class="comment"># build a format string with slots between the digits</span><br />    digits = digits.split(<span class="string">""</span>).join(<span class="string">"%s"</span>)<br /><br /><br />    operator_perms = ops.unique_permutations<br />    operator_perms.each <span class="keyword">do</span> |p|<br />      <span class="comment"># build expression by inserting the ops into the format string,</span><br />      <span class="comment"># after converting spaces to empty strings</span><br />      exp = digits % p.split(<span class="string">""</span>).map{|x|x.chomp(<span class="string">" "</span>)}<br />      val = eval(exp)<br />      puts <span class="string">"*******************"</span> <span class="keyword">if</span> val==target<br />      puts exp + <span class="string">" = "</span> + val.to_s<br />      puts <span class="string">"*******************"</span> <span class="keyword">if</span> val==target<br />    <span class="keyword">end</span><br />    puts<br />    puts <span class="string">"%d possible equations tested"</span> % operator_perms.size<br /><br /></div></div>
+			<p>Paul's permutation code is the first new element that jumps out at us here.  It works by recursively combining smaller and smaller permutations until it has generated all possible combinations.  The permutations are stored in Hash keys so duplicates will automatically be eliminated.</p>
+			<p>Next we see that Paul nails pretty much all of the extra credit by importing the digits, operators, and target from command-line parameters.  This means that he can't hardcode any logic, because he can't count on what will be passed to his script.</p>
+			<p>The next two lines are the interesting part.  Paul counts the number of spaces between all the digits.  These are the positions in which operators need to be placed.  Paul pads the operator list to include extra spaces, so it will match the position count.  Then the digit list is transformed into a printf() style pattern that will insert an operator, or extra space, between each number.</p>
+			<p>From there it just takes one call to the unique_permutations() method to walk the choices.  Paul's output code is very similar to the code we saw from Dennis earlier.</p>
+			<p>Going one step further, let's examine how Christian Neukirchen walked the same position list:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    (00000000..<span class="string">'22222222'</span>.to_i(3)).map { |x| x.to_s(3).rjust(8, <span class="string">"0"</span>).<br />                                                       tr(<span class="string">'012'</span>, <span class="string">'-+ '</span>) }.<br />      find_all { |x| x.count(<span class="string">"-"</span>) == 2 <span class="keyword">and</span> x.count(<span class="string">"+"</span>) == 1 }.<br />      map { |x|<br />        t = <span class="string">"1"</span> + x.split(<span class="string">//</span>).zip((2..9).to_a).join.delete(<span class="string">" "</span>)<br />        [eval(t), t]<br />      }.sort.each { |s, x|<br />        puts <span class="string">"*****************"</span> <span class="keyword">if</span> s == 100<br />        puts <span class="string">"#{x}: #{s}"</span><br />        puts <span class="string">"*****************"</span> <span class="keyword">if</span> s == 100<br />      }<br /><br /></div></div>
+			<p>This code does the same permutation of positions Paul's code did, using simple counting.  You see, counting from 00000000 (a pretty way to show 0 with eight positions) to whatever number '22222222'.to_i(3) is, in base 3, will yield all possible combinations of 0s, 1s, and 2s.  Christian then culls the list for the proper mixes of operators and transliterates those digits to operators or spaces.  The rest of the code we have seen before.</p>
+			<p>Together these solutions show quite a few options for handling permutations in Ruby.  Another common option from the submissions I didn't show was to load an external library that handles permutations.  This is a great option in practice, because you get road-tested code, but I wanted to show how you might handle such a thing for this summary.</p>
+			<p>My thanks to all the people who sent in permutations of Ruby code to solve this permutations problem.  They are great stuff.</p>
+			<p>Tomorrow's problem is something you can handle on your fingers...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247133">Rick DeNatale</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247134">Marcel Ward</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247135">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247138">Kyle Schmitt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247139">Ryan Leavengood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247146">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247153">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247160">John Browning</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247164">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247188">Ryan Leavengood (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247191">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247197">Harrison Reiser</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247209">Dennis Frommknecht</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247210">Sergey Volkov</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247214">Matt Hulse</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247216">Gavin Stark</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247280">Paul</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247348">Ruben Medellin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247362">Rene Koning</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247393">Wolfgang Seeberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247388">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247400">David Tran (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247423">Gareth Adams</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/247430">Erwin Abbott</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248071">Jesse Merriman</a></li>
+			</ol>
+			<p><a href="quiz119_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

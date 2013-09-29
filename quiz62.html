@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Packing (#62)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Packing (#62)</span>
+			<p>by Ilmari Heikkinen</p>
+			<p>You're moving. And that means a whole bunch of boxes need to be moved from the old place to the new one. You've got a pickup truck to do the moving, but it can only hold one vertical level of boxes. The boxes need to be padded with one unit worth of foam on each side that's facing another box.</p>
+			<p>The goal is to minimize the amount of trips you have to do to move all the boxes.</p>
+			<p>The solver program should take two lines of input, first one containing the trunk dimensions (e.g. 10x20), and the second one containing all the box dimensions, separated by spaces (e.g. 1x3 4x8 3x7 9x4 10x14.)</p>
+			<p>The output of the solver should be ascii art of the trunk packings, with each trunkful separated by an empty line.</p>
+			<p class="example">Example:<br />$ ruby solver.rb<br />10x20<br />1x3 4x8 3x7 9x4 10x14<br /><br />**************.***.. <br />**************......<br />**************.****.<br />**************.****.<br />**************.****.<br />**************.****.<br />**************.****.<br />**************.****.<br />**************.****.<br />**************.****.<br /><br />*********...........<br />*********...........<br />*********...........<br />*********...........<br />....................<br />*******.............<br />*******.............<br />*******.............<br />....................<br />....................</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>As the submitters pointed out, this in the famous "bin packing" challenge, in two dimensions.  There's a lot of theory available for this problem which I've just been looking into a little myself.</p>
+			<p>The solutions took pretty different approaches and I encourage you to walk through them a little and get a handle on how they are working.  We will go through Ilmari's code here because you can make sense of it without all the theory, if you work it through carefully.  Given that, let's take it in super small slices this time:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    trunk = gets.strip.split(<span class="string">"x"</span>).map{|i| i.to_i}<br />    boxes = gets.strip.split(<span class="string">" "</span>).map{|s| s.split(<span class="string">"x"</span>).map{|i| i.to_i} }<br /><br /></div></div>
+			<p>Those are the first two non-declarative lines of Ilmari's script.  Obviously, we're just reading the input here.  Looks like we're breaking the first line on "x" and the second on " " and then "x".  Note that to_i() is ignoring non-numeric characters like line-endings.  Can you envision what the Arrays will hold at this point (assuming the quiz example)?  Here's a peek:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    trunk = [10, 20]<br />    boxes = [[1, 3], [4, 8], [3, 7], [9, 4], [10, 14]]<br /><br /></div></div>
+			<p>The next line is:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    boxes = boxes.sort_by{|b| b.inject{|f,i| f*i} }.reverse<br /><br /></div></div>
+			<p>We're sorting the boxes here, but by what?  The product of the two numbers that make up the box (width and height).  That's their area, right?  Just remember that they get reversed, so here's what we are looking at now:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    boxes = [[10, 14], [9, 4], [4, 8], [3, 7], [1, 3]]<br /><br /></div></div>
+			<p>As you can see, that gives us a largest to smallest ordering.  Just as it is with real moving, it's easier to load the big items first, then fill around them with the little items.</p>
+			<p>The next line of code is:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    trunks = [Trunk.new(*trunk)]<br /><br /></div></div>
+			<p>We're building a Trunk (inside an Array) here.  Note the splat operator applied to trunk, which will separate it out into a width and height.</p>
+			<p>Looks like we need to see the definition of Trunk at this point, but just the constructor will do for now:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Trunk<br />      <span class="keyword">def</span> initialize(w,h)<br />        <span class="variable">@w</span> = w<br />        <span class="variable">@h</span> = h<br />        <span class="variable">@items</span> = []<br />        <span class="variable">@rows</span> = (1..<span class="variable">@h</span>+2).map{ <span class="string">"_"</span>*(<span class="variable">@w</span>+2) }<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The first three assignments should be painfully obvious.  The only mildly complicated line is the one that makes @rows:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="variable">@rows</span> = [ <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span>,<br />              <span class="string">"____________"</span> ]<br /><br /></div></div>
+			<p>Notice that an extra column or row is added on every side of the Trunk.  Let's just assume we will figure out why that is later.</p>
+			<p>Now we're going to get adventurous and take in a few more lines, but we will dissect them slowly:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">until</span> boxes.empty?<br />      fitting = boxes.find{|box| trunks.last.add box }<br />      <span class="keyword">if</span> fitting<br />        boxes.delete_first fitting<br />      <span class="keyword">elsif</span> trunks.last.empty?<br />        raise <span class="string">"Can't fit #{boxes.inspect} into the trunk"</span><br />      <span class="keyword">else</span><br />        trunks &lt;&lt; Trunk.new(*trunk) <span class="keyword">unless</span> boxes.empty?<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>There's some new methods being used here, but let's try to get the hang of this process as a whole.  While there are boxes, this loop tries to fit them into the last Trunk.</p>
+			<p>Why just the last one though, wouldn't that miss opportunities?  It doesn't but it took me a bit to understand why.  We're going through the boxes largest to smallest and the last Trunk will always be the one with the most open space (completely open in the example we just saw).  If a big box doesn't have room there, all the smaller boxes will be tried by find().</p>
+			<p>Back to that if statement.  If we find a fit, we remove it from the boxes (assume we understand delete_first()).  If it didn't fit and the last Trunk was empty?(), the box is bigger than the Trunk and a solution is impossible.  Finally, if it didn't fit but the last Trunk had items in it, we better make an new() Trunk and try again.</p>
+			<p>Let's examine some of those extra methods to make sure we have this down.  Here's delete_first():</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="keyword">def</span> delete_first item<br />        delete_at index(item)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The function is obvious, find an item and delete it.  Why do we need that?  Duplicates:</p>
+			<p class="example">&gt;&gt; arr = [1, 2, 2, 3, 2, 2, 2]          <br />=&gt; [1, 2, 2, 3, 2, 2, 2]<br />&gt;&gt; arr.delete(2)<br />=&gt; 2<br />&gt;&gt; arr<br />=&gt; [1, 3]<br />&gt;&gt; arr = [1, 2, 2, 3, 2, 2, 2]<br />=&gt; [1, 2, 2, 3, 2, 2, 2]<br />&gt;&gt; arr.delete_first(2)<br />=&gt; 2<br />&gt;&gt; arr<br />=&gt; [1, 2, 3, 2, 2, 2]</p>
+			<p>See the difference?  If we used delete(), it would wipe out all boxes of the same size.</p>
+			<p>What about Trunk.empty?()?</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Trunk<br />      <span class="keyword">def</span> empty?<br />        <span class="variable">@items</span>.empty?<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>A Trunk that has no @items in it is empty.  That's what we assumed.</p>
+			<p>Okay, the critical missing piece is the monster.  If we get past it, we are home free.  Here we go:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Trunk<br />      <span class="keyword">def</span> add box<br />        try_adding(box) <span class="keyword">or</span> try_adding(box.rotate)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>We can see here that we just try_adding() the box both ways.  If either fits, we assume it's now in the Trunk (the loop deletes it from the box list then, if you recall), otherwise it seems we will get a false return value.  I might have named this method add?(), because I think it would have made that easier to see.</p>
+			<p>I was guessing about rotate() there of course, let's make sure I'm right:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="keyword">def</span> rotate<br />        d = dup<br />        d.push d.shift<br />        d<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Remember a box is something like [10, 14].  That means the above returns a copy of the form [14, 10].  Yep, that flips it.</p>
+			<p>That means we just need to see try_adding():</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Trunk<br />      <span class="keyword">def</span> try_adding box<br />        boxrow = <span class="string">"_"</span>*(box[0]+2)<br />        <span class="variable">@rows</span>.each_with_index{|r,i|<br />          <span class="keyword">break</span> <span class="keyword">if</span> i &gt; <span class="variable">@rows</span>.size - (box[1]+2)<br />          <span class="keyword">next</span> <span class="keyword">unless</span> r.include?(boxrow)<br />          idxs = <span class="variable">@rows</span>[i+1, box[1]+1].map{|s| s.index boxrow }<br />          <span class="keyword">next</span> <span class="keyword">unless</span> idxs.all?<br />          idx = idxs.max<br />          <span class="keyword">next</span> <span class="keyword">unless</span> <span class="variable">@rows</span>[i, box[1]+2].all?{|s| s[idx,boxrow.size] == boxrow }<br />          <span class="variable">@rows</span>[i+1, box[1]].each{|s|<br />            s[idx+1, box[0]] = <span class="string">"#"</span> * box[0]<br />          }<br />          <span class="variable">@items</span>.push box<br />          <span class="keyword">return</span> box<br />        }<br />        <span class="keyword">nil</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Oh boy.  I warned you the tough stuff was coming.  It's not as bad as it looks though, so let's just keep breaking it down.</p>
+			<p>First, we see that a boxrow is built.  Again, it is expanded on both sides.  Now that makes sense to me.  If you expand the Trunk and all the boxes, you can essentially forget about padding, as long as you remember to strip it out later.  Also note that boxrow is built as a String of "_" characters, so it will be used to find empty Trunk space.</p>
+			<p>Now we walk the Trunk, @row-by-@row.  The first line breaks out of the iterator though, as soon as we run out of enough @rows to hold the box (and the two extra padding @rows, of course).</p>
+			<p>The next few lines verify that the box fits on this @row, and the coming @rows.  Let's look at those again:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">          <span class="comment"># ...</span><br />          <span class="keyword">next</span> <span class="keyword">unless</span> r.include?(boxrow)<br />          idxs = <span class="variable">@rows</span>[i+1, box[1]+1].map{|s| s.index boxrow }<br />          <span class="keyword">next</span> <span class="keyword">unless</span> idxs.all?<br />          idx = idxs.max<br />          <span class="keyword">next</span> <span class="keyword">unless</span> <span class="variable">@rows</span>[i, box[1]+2].all?{|s| s[idx,boxrow.size] == boxrow }<br />          <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Line-by-line that's:  Verify that this @row holds the box, or move on.  Fetch the index where the box would fit on @rows needed to hold it below this one.  Verify that we got an index for all needed lines, or move on.  Find the highest of those indices.  (More on that in a second.)  Finally, verify that the box does fit on all needed @rows at the highest found index, or move on.</p>
+			<p>When I first read that code, I was sure it didn't work for all cases.  Trying to prove it wrong taught me how it does work.  Remember, the code works biggest box to smallest, and we now know that it fills Trunks top left to bottom right (index() favors a left most match).  Given that the only danger is a setup like:</p>
+			<p class="example">##__<br />##__<br />____</p>
+			<p>And us needing to place a 1x3 box.  It fits on the right side, but the last index() wouldn't match the others.  That's why the code uses the max().  It shifts it to the right as far as needed.  (Always using the first index() would work the same, because of the Trunk fill order.)</p>
+			<p>The rest of that monster we are breaking down is trivial:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">          <span class="comment"># ...</span><br />          <span class="variable">@rows</span>[i+1, box[1]].each{|s|<br />            s[idx+1, box[0]] = <span class="string">"#"</span> * box[0]<br />          }<br />          <span class="variable">@items</span>.push box<br />          <span class="keyword">return</span> box<br />        }<br />        <span class="keyword">nil</span><br />      <span class="keyword">end</span><br /><br /></div></div>
+			<p>If we made it this far, we have a match, so draw the actual box in place.  We can ignoring padding now, since we already proved there is room.  Add the box to @items, so we know the Trunk isn't empty?(), and return any true value to indicate a match.  The final nil is our default false return, if we didn't find a match.</p>
+			<p>We're home free now.  Here's the final printing code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    puts<br />    puts trunks.join(<span class="string">"\n\n"</span>)<br /><br /></div></div>
+			<p>It's important to know here that join() calls to_s() on all arguments before it combines them.  That's the only method we haven't seen:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Trunk<br />      <span class="keyword">def</span> to_s<br />        <span class="variable">@rows</span>[1..-2].map{|r|r[1..-2]}.join(<span class="string">"\n"</span>)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Nothing surprising here, as long as you remember that the extra space has to be stripped back out of the Trunk.</p>
+			<p>That gives us a final answer (for the quiz example) of:</p>
+			<p class="example">##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />##########<br />__________<br />#########_<br />#########_<br />#########_<br />#########_<br />__________<br /><br />####_###_#<br />####_###_#<br />####_###_#<br />####_###__<br />####_###__<br />####_###__<br />####_###__<br />####______<br />__________<br />__________<br />__________<br />__________<br />__________<br />__________<br />__________<br />__________<br />__________<br />__________<br />__________<br />__________</p>
+			<p>See how they are packed largest to smallest, top left to bottom right?  That's as tight as we can make it.</p>
+			<p>A big thank you to the three brave souls willing to slug out a tough problem this week.  Nice solutions all around.</p>
+			<p>Next week, Matthew Moss is back with a tricky little riddle...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/175867">MenTaLguY</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/175868">Ilmari Heikkinen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/175877">Adam Shelly</a></li>
+				<li><a href="http://groups.google.com/group/comp.lang.ruby/msg/dce390ebe54765df">Horndude77</a></li>
+			</ol>
+			<p><a href="quiz62_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

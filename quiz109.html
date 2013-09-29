@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Number Spiral (#109)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Number Spiral (#109)</span>
+			<p>by Bob Showalter</p>
+			<p>(Taken from the puzzle by William Wu at http://www.ocf.berkeley.edu/~wwu/riddles/cs.shtml)</p>
+			<p>[Editor's Note:  This was also a code golf problem a few months back:  http://codegolf.com/oblongular-number-spirals  --JEG2]</p>
+			<p>Write a Ruby program to print out a "spiral" of numbers that fill a NxN square. Your program will take a single argument to specify the dimensions of the square (1 or higher). The number zero represents the center of the spiral, and the succeeding integers spiral out in a clockwise (or counterclockwise; your choice) direction from the center until the square is filled.</p>
+			<p>Your program should write the output line by line, without using an array to build up the data first.</p>
+			<p>Here's the output for an 8x8 spiral:</p>
+			<p class="example">56   57   58   59   60   61   62   63<br /><br />55   30   31   32   33   34   35   36<br /><br />54   29   12   13   14   15   16   37<br /><br />53   28   11    2    3    4   17   38<br /><br />52   27   10    1    0    5   18   39<br /><br />51   26    9    8    7    6   19   40<br /><br />50   25   24   23   22   21   20   41<br /><br />49   48   47   46   45   44   43   42</p>
+			<hr />
+			<p><span class="title">Quiz Summaries</span></p>
+			<p>by Bob Showalter</p>
+			<p>This was an interesting little puzzle, because it isn't immediately obvious just how to write out a spiral line by line. The rule against building up the data in an array was intended to make it bit more challenging, although I'm not sure using an array simplifies things all that much.</p>
+			<p>The solutions tended to fall into one of two groups, each taking a different approach to the problem. The first group noticed that a spiral of any given order contained within it all the spirals of lower orders. So, a 4x4 spiral contains the 3x3, which in turn contains the 2x2, and so on. This leads to a recursive algorithm.</p>
+			<p>The other group derived a function that could generate the number to be emitted for any "cell", given the order of the spiral and the cell's row and column.</p>
+			<p>Krishna Dole's compact solution is an example of the latter approach. Let's analyze his algorithm.</p>
+			<p>He defines a method called spiral, which takes a pair of coordinates that are relative to the center of the spiral. At this point, I'm not sure what the method does; we'll have to get to that later. I note that it doesn't take the order of the spiral as a parameter, so we'll have to see how he's handling that.</p>
+			<p>The main program looks like this:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    n = ARGV[0].to_i<br /><br />    <span class="keyword">for</span> row <span class="keyword">in</span> 0..(n - 1)<br />      puts (0..(n - 1)).map{|col|<br />        spiral(col - (n <span class="string">/ 2), (n /</span> 2) - row).to_s.rjust(4) }.join<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The first line sets n to the "order" of the spiral as taken from the command line argument. So n=5 would mean a 5x5 spiral.</p>
+			<p>The for loop iterates over the rows of the spiral, starting at 0. So for our 5x5 spiral, we would have rows 0, 1, 2, 3, and 4.</p>
+			<p>The next two lines pack a lot into a small space. If we ignore the call to spiral for a moment, it looks like this:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    puts (0..(n - 1)).map{|col| ... }.join<br /><br /></div></div>
+			<p>The map operation iterates over the columns of the spiral (e.g. 0 through 4), setting the variable col to the column number. The results of the block (i.e. whatever the code represented by the ellipsis does) are concatenated by join into a single string and then written out (followed by a newline) by puts.</p>
+			<p>So we know that the code in the ellipsis must give us a single "cell", and these cells are strung together to make a row, which is output. Looking back at the original code, we can see that the return from spiral is converted to a string and right-justified in a 4-character field. So the return from spiral is the number to be written in the current cell.</p>
+			<p>OK, so lets look at how he calculates the number to go in a cell. Remember, when spiral is called, row is the current row number (0=top) and col is the current column number (0=left). The call to spiral looks like:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    spiral(col - (n <span class="string">/ 2), (n /</span>2) - row)<br /><br /></div></div>
+			<p>(n / 2) is a constant. It's half the size of the spiral. Note that because n is an Integer, (n / 2) is also an Integer, so a value of 5 for n would yield 2 for (n / 2), and not 2.5.</p>
+			<p>Remember the comment in the code above the definition of spiral? It told us that the coordinates were relative to the center of the spiral. So this code is adjusting the row and col values to be relative to the center. The top-left corner of our 5x5 spiral would be row=0 and col=0. The values passed to spiral would be</p>
+			<p class="example">x = col - (n / 2)<br />  = 0 - (5 / 2)<br />  = 0 - 2<br />  = -2<br /><br />y = (n / 2) - row<br />  = (5 / 2) - 0<br />  = 2 - 0<br />  = 2</p>
+			<p>The subtraction is reversed for the y coordinate so that y values increase moving "up" the screen even though row values increase moving "down".</p>
+			<p>Why make the coordinates relative to the center of the spiral? Because for any given (x, y) pair relative to the center of the spiral, the number to be output at that position is the same, *regardless of the order of the spiral*. So that is why we don't see the order referenced in the spiral method: it isn't needed.</p>
+			<p>OK, now it's time to figure out how the spiral method does its magic. Krishna starts by computing two values max_xy, and offset:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    max_xy = [x,y].collect{|num| num.abs}.max<br />    offset = (max_xy * 2 - 1)**2 - 1<br /><br /></div></div>
+			<p>max_xy is obviously the larger of x or y, considered in absolute terms. If you think of the spiral as a set of concentric "rings" surrounding the digit zero, max_xy would tell us which "ring" we are on. This is part of the key to the algorithm: he doesn't treat the spiral as a spiral at all, but as a set of rings. For a spiral of odd order, the rings are completely filled in; for a spiral of even order, the outermost ring is only partially filled.</p>
+			<p>Each ring is a sequence of numbers. Here are the sequences for the first few "rings":</p>
+			<p class="example">max_xy=0   0<br />max_xy=1   1..8<br />max_xy=2   9..24<br />max_xy=3   25..48</p>
+			<p>offset is simply one less than the starting value of each ring. So for max_xy=3, offset is 24.</p>
+			<p>The remainder of the code is an "if" statement that evaluates to the number to be output for the curent cell. It computes this by treating the "ring" as a sequence of four "legs", and computing the value given the "leg" and position within the leg. For the outermost ring of a 5x5 spiral, the "legs" look like this:</p>
+			<p class="example">A  B  B  B  B<br />A  .  .  .  C<br />A  .  .  .  C<br />A  .  .  .  C<br />D  D  D  D  C</p>
+			<p>The different branches of the if statement handle each leg. Let's consider the bottom-most "A" cell of this ring. It would have the coordinates (-2, -1). The code for this leg is:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">if</span> -(x) == max_xy <span class="keyword">and</span> x != y<br />      y + offset + max_xy<br /><br /></div></div>
+			<p>The test is true, because -(-2) == 2 and -2 != -1. So the value is (-1) + 24 + 2, or 25. The calculations for the remaining legs proceed in a similar manner.</p>
+			<hr />
+			<p>by James Edward Gray II</p>
+			<p>I had trouble with this problem when it appeared on Code Golf.  It seemed easy enough but I just couldn't come up with a solid strategy.  Luckily, the people who solved this week's quiz are much smarter than me and I have learned some great tricks from them.</p>
+			<p>For our first approach, let's examine Bill Dolinar's code.  Bill provided a wonderful description of the algorithm he used in the comments of the code, so we can start there:</p>
+			<p class="example">Let item with value 0 be at x, y coordinate (0, 0).  Consider the<br />spiral to be rings of numbers.  For the numbers 1 through 8 make<br />up ring level 1, and numbers 9 through 24 make up ring level 2.<br />To figure out the value at a particular x, y position, note that<br />the first value at any level is (2 * level - 1) ** 2 and use that<br />value to count up or down to the coordinate.</p>
+			<p>I suggest referring back to that description as we go.  It unlocks each piece of the code puzzle as you begin to take it all in.</p>
+			<p>Here's the beginning of the primary class:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Spiral<br /><br />      <span class="keyword">def</span> initialize(size)<br />        <span class="variable">@size</span> = size<br />        <span class="variable">@center</span> = size/2<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>You can see that a spiral stores both its size and the center point, where counting should begin.</p>
+			<p>Skipping ahead in the methods a little, let's see how the center is used:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> coordinate_for(row, col)<br />        [col - <span class="variable">@center</span>, <span class="variable">@center</span> - row]<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Remembering Bill's description, the zero cell of the spiral is suppose to be coordinate x = 0, y = 0.  The center is used to calculate this.  For example, here are the outputs of this method for the square right around the center of a size eight spiral:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; Spiral.new(8).coordinate_for(4, 4)<br />    =&gt; [0, 0]<br />    &gt;&gt; Spiral.new(8).coordinate_for(4, 5)<br />    =&gt; [1, 0]<br />    &gt;&gt; Spiral.new(8).coordinate_for(4, 3)<br />    =&gt; [-1, 0]<br />    &gt;&gt; Spiral.new(8).coordinate_for(5, 4)<br />    =&gt; [0, -1]<br />    &gt;&gt; Spiral.new(8).coordinate_for(3, 4)<br />    =&gt; [0, 1]<br /><br /></div></div>
+			<p>Note that the method parameters go in as a row then column, but come back out as an x coordinate followed by a y.</p>
+			<p>Now that we've seen the coordinate system, let's tackle the actual work horse of the class:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="comment"># returns the value for a given row and column of output</span><br />      <span class="keyword">def</span> position_value(row, col)<br />        x, y = coordinate = coordinate_for(row, col)<br />        level = [x.abs, y.abs].max<br />        <span class="keyword">if</span> x &lt; level &amp;&amp; y &gt; -level<br />          first_number(level) +<br />              steps_between(first_coordinate(level), coordinate)<br />        <span class="keyword">else</span><br />          last_number(level) -<br />              steps_between(last_coordinate(level), coordinate)<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>First we see the row and column switched into coordinates.  From coordinates, the ring level is determined.  (Glance back to Bill's description if you need to remember what that's for.)  The if statement then checks to see where we are in the current ring and either pulls the first number of the ring to count up to our location, or the last number to count down.  The result of either process is the value of the requested cell.</p>
+			<p>Here are the methods that give the first and last numbers of a ring:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> first_number(level)<br />        (2 * level - 1) ** 2<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> last_number(level)<br />        first_number(level + 1) - 1<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The first_number() method is right out of Bill's description.  For last_number(), the code just calls first_number() for the next level and subtracts one.</p>
+			<p>Similarly, here are the methods that calculate the coordinates of these numbers:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> first_coordinate(level)<br />        [-level, -level + 1]<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> last_coordinate(level)<br />        [-level, -level]<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Armed with both pairs of methods, counting steps is just simple subtraction:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> steps_between(point1, point2)<br />        (point1[0] - point2[0]).abs + (point1[1] - point2[1]).abs<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Finally, the class provides one more convenience method for calculating the largest number in the spiral:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> maximum_value<br />        <span class="variable">@size</span> * <span class="variable">@size</span> - 1<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>You see the minus one there because our spirals are zero-based.</p>
+			<p>Here's the code that puts that class to work solving the problem:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$0</span><br />      size = ARGV[0].to_i<br />      spiral = Spiral.new(size)<br />      width = spiral.maximum_value.to_s.length + 3<br />      (0...size).each <span class="keyword">do</span> |row|<br />        (0...size).each <span class="keyword">do</span> |col|<br />          print spiral.position_value(row, col).to_s.rjust(width)<br />        <span class="keyword">end</span><br />        print <span class="string">"\n\n"</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Here we see the size pulled in from the command-line arguments, a Spiral object constructed, and a cell width calculated large enough to hold the biggest number plus some padding.  The code then walks each line, calculating and printing each cell.</p>
+			<p>Other solvers, had different approaches.  One such approach was based on the knowledge that an even sized spiral is just a smaller odd sized spiral with an extra number at the beginning of each row and a new row across the top.  Along the same lines, and odd sized spiral is a smaller even sized spiral with the extra numbers at the ends of rows and along the bottom.  You can use these facts to recursively calculate numbers in the spiral.</p>
+			<p>Here's some code from Eric I. that does just that:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> odd_spiral(size, row, col)<br />      <span class="keyword">if</span> row == size - 1 : size**2 - 1 - col<br />      <span class="keyword">elsif</span> col == size - 1 : (size - 1)**2 + row<br />      <span class="keyword">else</span> even_spiral(size - 1, row, col)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">def</span> even_spiral(size, row, col)<br />      <span class="keyword">if</span> row == 0 : size**2 - size + col<br />      <span class="keyword">elsif</span> col == 0 : size**2 - size - row<br />      <span class="keyword">else</span> odd_spiral(size - 1, row - 1, col - 1)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    size = (ARGV[0] || 8).to_i<br />    (0...size).each <span class="keyword">do</span> |row|<br />      (0...size).each <span class="keyword">do</span> |col|<br />        v = size % 2 == 0 ? even_spiral(size, row, col) :<br />                            odd_spiral(size, row, col)<br />        print v.to_s.rjust((size**2 - 1).to_s.length), <span class="string">' '</span><br />      <span class="keyword">end</span><br />      puts<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Starting with the odd_spiral() method, we see that it calculates the extra last row or column if we are in that, or recurses into the smaller even spiral.  Then even_spiral() builds the new first row or column when we are in that, or recurses into the smaller odd spiral.</p>
+			<p>The rest of the code is pretty similar to Bill's version walking each cell, calculating the value, and printing the result with padding.</p>
+			<p>My thanks to all who showed me how this problem is actually done.  It's a fun little challenge and the submitted solutions capture that well.</p>
+			<p>Tomorrow we will play with run-time auto-completion for Ruby code...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/233954">Marcel Ward</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/233956">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/233959">Ben Ford</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/233964">Eric I. (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/233970">Nasir Khan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234003">Martin DeMello</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234005">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234009">Tom Ayerst</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234010">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234031">Francesco Levorato</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234037">Bill Dolinar</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234206">Bob Showalter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234210">Matthew Moss (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234414">Mark Harris</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234444">Tom Ayerst (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234528">avy</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234636">Krishna Dole</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/234923">Nicolas Modrzyk</a></li>
+			</ol>
+			<p><a href="quiz109_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

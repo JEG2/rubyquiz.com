@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - GOPS (#116)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">GOPS (#116)</span>
+			<p>by Christoffer Lern&ouml;</p>
+			<p>GOPS, the Game of Pure Strategy (a.k.a Goofspiel), is a very simple cardgame.</p>
+			<p>In GOPS, one suit is singled out as "competition suit" and each of the remaining suits becomes the hand for a player (with one suit discarded if there are only two players). The competition suit is shuffled and placed face down.</p>
+			<p>Game starts by turning up the top card in the competition stack. The players then make a hidden bid on the card, using one of their own cards. Once all players have made a bid, the cards are revealed and the player with the highest card collects the competition card. In case of a tie, the competition card is discarded.</p>
+			<p>The game then proceeds in the same manner until the competition stack is empty.</p>
+			<p>The winner is the player with the highest number of points calculated from the competition cards won, where Ace is the lowest--worth 1 point--and King is the highest--worth 13 points.</p>
+			<p>The task for this quiz is to write a bot to play 2-player GOPS against other bots.</p>
+			<p>A bot needs to be able to read gameplay on STDIN and write its moves to STDOUT using the following protocol:</p>
+			<p class="example">1. The engine sends the first competition card as the string "Competition<br />   card: CARD", where CARD is the value of the card, from 1 (Ace) to 13<br />   (King).<br />   <br />   Example: The server would write "Competition card: 12" if the competition<br />   card for this round was Queen of the competition suit.<br /><br />2. The engine then expects a response within 30 seconds. The response should<br />   be the value of the card you wish to play as a string.  You may only play<br />   each card in your suit once, of course.<br /><br />   Example: The bot could print the line "10" to STDOUT (and flush output)<br />   to bid with a ten.<br /><br />3. The engine will respond by sending the card the opponent just played as<br />   the string "Opponent's bid:  CARD" where CARD is the value of the bid<br />   (1-13).<br /><br />   Example, the engine would print "Opponent's bid:  3" if the opponent bid<br />   a 3 in the last round.  This tells you that your 10 beat the opponent's<br />   3 and you won the Queen.<br /><br />4. Return to 1 with the next card in the competition stack, until all 13<br />   cards have been played.</p>
+			<p>Here is a very simple random bot implementing the protocol:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    (1..13).sort_by { rand }.each <span class="keyword">do</span> |card|<br />      <span class="global">$stdin</span>.gets <span class="comment"># competition card--ignored</span><br />      <span class="global">$stdout</span>.puts card<br />      <span class="global">$stdout</span>.flush<br />      <span class="global">$stdin</span>.gets <span class="comment"># opponent's play--ignored</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>A GOPS engine and some trivial bots are available for you to use in testing your strategies:</p>
+			<p><a href="http://rubyquiz.com/gops.zip">GOPS Engine</a></p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>When I was first solving this quiz I built a suite of functions that measured bidding power remaining and the ratio of your current score to the guaranteed victory score of 46 points.  I then tried to fine tune a bot that made decisions based on these factors.  I couldn't seem to find a good balance for that though and the bot did not play well.</p>
+			<p>Ola Leifler took the tuning out of the programmer's hands and asked the computer to do that part too.  Using a genetic algorithm library, Ola generated pure ruby card selection routines just by having the computer play itself and find what was winning.  That code is a very interesting approach to this problem and worth a look.</p>
+			<p>I took a different path.  Since I couldn't seem to nail a solid strategy, I focused in on the details of game play and how I might use those to my advantage.</p>
+			<p>My best realization is that sometimes you have "sure wins."  That is to say when your opponent has played the King and you have not, you have one card you can take without fail.  When the opponent throws a Queen, it's two cards.  You can then plan which cards to capture with your sure wins.</p>
+			<p>You always know the bid cards still to be played by taking the full suit and removing any cards you have already bid on.  Given that, you can set your sure win King aside to take the best card left and plan to use your sure win Queen on the second best.</p>
+			<p>The only question remaining is, what do we play when we don't have a sure win play.  I chose a simple throw-the-lowest-card strategy, in the hopes it would draw out the opponent's high cards without me spending mine.  A better backup strategy, like one that watched for the critical 46 point barrier in bids left plus our current score, could probably make this bot stronger.</p>
+			<p>That's the description.  Now we're ready for the translation into code.  It begins like this:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -w</span><br /><br />    <span class="keyword">class</span> Player<br />      CARDS = (1..13).to_a<br /><br />      <span class="keyword">def</span> initialize<br />        <span class="variable">@cards_left</span> = CARDS.dup<br />        <span class="variable">@wins</span>       = Array.new<br />      <span class="keyword">end</span><br /><br />      attr_reader :cards_left<br />      protected   :cards_left<br /><br />      <span class="keyword">def</span> play_card(card)<br />        <span class="variable">@cards_left</span>.delete(card)<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> win_card(bid_card)<br />        <span class="variable">@wins</span> &lt;&lt; bid_card<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The Player class just provides the tools to represent the cards a bot has to play as well as the cards they have won.  This is common functionality needed between my bot and the opponent bot, so I factored it out into this base class.  The play_card() method is used to remove a card from the bot's remaining hand, and win_card() just adds a bid card to the bot's winnings.</p>
+			<p>Now we move into the actual Planner bot code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">class</span> Planner &lt; Player<br />      <span class="keyword">def</span> initialize<br />        <span class="keyword">super</span><br /><br />        <span class="variable">@bids_left</span> = CARDS.dup<br />        <span class="variable">@opponent</span>  = Player.new<br /><br />        <span class="variable">@sure_wins</span> = Hash.new<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Here I just setup a way to track remaining bids, the opponent, and the sure wins I have found.  Note that the opponent is just a bare Player object while Planner subclasses Player to add this additional tracking and an interface.</p>
+			<p>The next two methods provide the bot's game interface:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> bid_on_card(card)<br />        <span class="variable">@bidding_for</span> = card<br />        <span class="variable">@last_play</span>   = choose_a_card<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> record_result(opponents_card)<br />        <span class="keyword">if</span> <span class="variable">@last_play</span> &gt; opponents_card<br />          win_card(<span class="variable">@bidding_for</span>)<br />        <span class="keyword">elsif</span> opponents_card &gt; <span class="variable">@last_play</span><br />          <span class="variable">@opponent</span>.win_card(<span class="variable">@bidding_for</span>)<br />        <span class="keyword">end</span><br /><br />        <span class="variable">@bids_left</span>.delete(<span class="variable">@bidding_for</span>)<br />        play_card(<span class="variable">@last_play</span>)<br />        <span class="variable">@opponent</span>.play_card(opponents_card)<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The bid_on_card() method is called each time this bot is expected to play.  The bid card is passed into the method so the bot will know what it is trying to win.  As you can see, this method just records the bid card and delegates card selection logic to choose_a_card().  We will look into that logic shortly.</p>
+			<p>After a play is made, the server sends the opponent's response which can be passed to record_result().  This method figures out who won the card, if anyone, and places it in the correct winnings.  This bot doesn't really make use of winnings, but I wanted to implement the whole game protocol in case I needed it later.  After recording the win, we remove both plays from from the bots and the bid from remaining bid cards.</p>
+			<p>Up until now we've really just been working with the game itself.  You can take all this code and just add a choose_a_card() method to try your own ideas.  Here's the logic for this bot:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      private<br /><br />      <span class="keyword">def</span> choose_a_card<br />        find_sure_wins<br /><br />        <span class="variable">@sure_wins</span>[<span class="variable">@bidding_for</span>] || <span class="variable">@cards_left</span>.min<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> find_sure_wins<br />        ((<span class="variable">@opponent</span>.cards_left.max + 1)..13).to_a.reverse_each <span class="keyword">do</span> |card|<br />          <span class="keyword">next</span> <span class="keyword">unless</span> <span class="variable">@cards_left</span>.include?       card<br />          <span class="keyword">next</span> <span class="keyword">if</span>     <span class="variable">@sure_wins</span>.values.include? card<br /><br />          <span class="variable">@sure_wins</span>[(<span class="variable">@bids_left</span> - <span class="variable">@sure_wins</span>.keys).max] = card<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This is the code representation of the strategy I described earlier.  First, choose_a_card() hunts for any sure wins by calling find_sure_wins().  After that a move is made by picking a sure win when there is one or throwing our lowest card when there isn't.</p>
+			<p>The real action is in find_sure_wins().  Here we walk a list of all cards larger than the opponent's highest card, in reverse.  Now we skip over any cards we don't have and cards we already have plans for.  For the rest of the cards, we just assign that play to the highest bid card yet to come up or be assigned.  Those are our sure wins.</p>
+			<p>The final bit of code just connects the bot interface to STDIN and STDOUT:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$PROGRAM_NAME</span><br />      planner = Planner.new<br />      13.times <span class="keyword">do</span><br />        <span class="global">$stdout</span>.puts planner.bid_on_card(<span class="global">$stdin</span>.gets[<span class="string">/\d+/</span>].to_i)<br />        <span class="global">$stdout</span>.flush<br />        planner.record_result(<span class="global">$stdin</span>.gets[<span class="string">/\d+/</span>].to_i)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>In this code we begin by making an instance of the bot.  We then loop over the rounds of play, reading the bid card and handing that to bid_on_card().  We pass whatever play is returned to STDOUT and flush() the output so the server sees the card.  Finally, the opponent's play is read and passed to record_result().</p>
+			<p>My thanks to all who made bots.  I can't believe how hard even some of the trivial bots were to play against.</p>
+			<p>Tomorrow, we will build my favorite computer simulation...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/241810">Christoffer Lern&ouml;</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/241812">Christoffer Lern&ouml; (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/241824">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/241858">Christoffer Lern&ouml; (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/241898">Ola Leifler</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/241946">Doug Meyer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/242133">James Edward Gray II (2)</a></li>
+			</ol>
+			<p><a href="quiz116_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

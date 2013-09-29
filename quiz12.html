@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Scrabble Stems (#12)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Scrabble Stems (#12)</span>
+			<p>by Martin DeMello</p>
+			<p>In Scrabble parlance, a 'bingo stem' is defined as a set of six
+letters that combines with a large fraction of the alphabet to anagram
+to valid seven letter words (a 'bingo' is a move using all seven tiles
+on your rack). For instance, one of the more prolific stems, SATIRE,
+combines with twenty letters, A, B, C, D, E, F, G, H, I, K, L, M, N,
+O, P, R, S, T, V, W (forming words like ASTERIA, BAITERS, RACIEST
+...).</p>
+			<p>Write a program that, given a word list and a cutoff n, finds all 6
+letter stems that combine with n or more letters, sorted in order of
+how many distinct letters they combine with.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This quiz wasn't too tough compared to last week's quiz, but I think that's a plus.  It's good to have an easy problem now and then.</p>
+			<p>What makes this problem simple is the usual algorithm tradeoff, we can sacrifice memory (in some cases it's speed, or even both) for an easy to code solution.  There are a lot of stems, but we can generate them all and store them with 50 MBs of RAM, which is not too rare these days.</p>
+			<p>All submitted solutions made this trade.  Here's an easy to follow version by Carlos:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    DICT = <span class="string">"/usr/share/dict/words"</span><br />    CUTOFF = ARGV[0].to_i<br /><br />    STEMS = {}<br /><br />    File.open(DICT) <span class="keyword">do</span> |f|<br />        f.each <span class="keyword">do</span> |word|<br />            word.chomp!<br />            <span class="keyword">next</span> <span class="keyword">if</span> word.length != 7<br />            word.downcase!<br />            letters = word.split(<span class="string">//</span>).sort!<br />            uniques = letters.uniq<br />            word = letters.join<br />            uniques.each <span class="keyword">do</span> |letter|<br />                stem = word.sub(letter, <span class="string">""</span>)<br />                (STEMS[stem] ||= {})[letter] = 1<br />            <span class="keyword">end</span><br />        <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    result = STEMS.delete_if { |k,v| v.size &lt; CUTOFF }.<br />            sort_by { |k,v| v.size }.<br />            reverse!.<br />            collect! { |k,v| [k, v.size] }<br /><br />    result.each <span class="keyword">do</span> |stem, combining| puts <span class="string">"#{stem} #{combining}"</span> <span class="keyword">end</span><br /><br /></div></div>
+			<p>The code starts by setting up a DICTIONARY, CUTOFF, and a place to store the STEMS we find.</p>
+			<p>After that, we have a line by line read of the dictionary, which is where most of the work is done.  The code inside "each" drops the newline, checks to make sure we only keep seven letter words, and normalizes case.  The next step is to split the words into letters and sort them to ease comparisons.  Then we generate all the unique letters and remove those from the word one at a time to find all the stems, adding each of those to STEMs.</p>
+			<p>At this point we've found all the stems in the dictionary for all seven letter words.  The next chunk of code removes results below the cutoff we wanted, sorts the results and prepares them for display.</p>
+			<p>The final line of the program writes out the results, line by line.</p>
+			<p>Of course, we can't always afford to sacrifice the RAM.  And this problem could be solved without as much memory.  The trick for that is to generate and verify stems one at a time.  This might be needed if the search space was larger.</p>
+			<p>As always, the solutions were varied and educational.  Some highlights:</p>
+			<p class="example">Glenn Parker's solution focuses on the more general problem<br />of generating stems, instead of just the Scrabble usage of<br />finding bingos.<br /><br />Jannis Harder submitted a solution for finding "nonsense"<br />stems, not in the dictionary.<br /><br />Dennis Ranke sent in a tricky solution that uses bit shifting<br />to track stem counts while it works.</p>
+			<p>But they're all worth a look, I think.</p>
+			<p>My thanks the stem solvers and to everyone who is helping Ruby Quiz stay so darn interesting.  I could never keep up if I wasn't getting such great help from the community.</p>
+			<p>No quiz this week, as I'll be spending a little time off with the family enjoying the holidays.  I hope everyone else can do the same, holiday or no.  The quiz will be back next week to kick off a cryptic new year...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124029">Carlos</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124032">Martin DeMello</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124033">Glenn Parker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124034">Andrew Johnson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124035">Dennis Ranke</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124036">Jannis Harder</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124037">Carlos (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124062">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124086">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124104">Jannis Harder (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/124122">Hans Fugal</a></li>
+			</ol>
+			<p><a href="quiz12_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

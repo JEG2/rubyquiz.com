@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Learning Tic-Tac-Toe (#11)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Learning Tic-Tac-Toe (#11)</span>
+			<p>This week's Ruby Quiz is to implement an AI for playing Tic-Tac-Toe, with a catch:  You're not allowed to embed any knowledge of the game into your creation beyond how to make legal moves and recognizing that it has won or lost.</p>
+			<p>Your program is expected to "learn" from the games it plays, until it masters the game and can play flawlessly.</p>
+			<p>Submissions can have any interface, but should be able to play against humans interactively.  However, I also suggest making it easy to play against another AI, so you can "teach" the program faster.</p>
+			<p>Being able to monitor the learning progression and know when a program has mastered the game would be very interesting, if you can manage it.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>In an interesting contrast, this quiz generated a lot of good discussion, but only two solutions.  I believe that may be because the problem turned out to be more complicated than I intended.  I know I personally ran into a few complications and didn't have a chance to finish my own solution.</p>
+			<p>Again, the discussion was excellent and you should probably skim the thread, if you weren't following it this weekend.  Multiple Tic-Tac-Toe servers (written in Ruby, of course) were posted, so programs could play against each other remotely.</p>
+			<p>I posted a message about how Tic-Tac-Toe positions can be transformed by rotation and "mirroring" to other seemly different layouts that can be handled the same.</p>
+			<p>I also posted a "tictactoe.rb" library that makes most interaction with the game trivially simple.  </p>
+			<p>Finally, a few of us posted some notes about the problems we ran into.  I agree with Hans Fugal, who said that you can learn almost as much from those.</p>
+			<p>The two solutions posted are similar.  Basically, they learn to avoid their mistakes over time.  They accomplish this by "scoring" the moves they made at each position in a game, based on whether they won or lost.  Eventually, this knowledge allows them to select mainly strong moves, simply by remembering how they've done in the past, in the same position.</p>
+			<p>I'll show Brian Schr&ouml;der's code here, but both were interesting to examine.  Brian's solution contained eight files of Ruby code, the embedded documentation for said files, charts, a write-up of the process, and was all wrapped up in a handy web page, so you can dig as deep as you like into what he's done.  (And he once asked where <b>I</b> find the time!)  For the purposes of this summary, I'll stick to his learning code.</p>
+			<p>Here it is:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Learning &lt; BasicInterface<br />      attr_accessor :random_prob<br />      attr_reader :player<br /><br />      <span class="keyword">def</span> initialize<br />        <span class="variable">@state_values</span> = Hash.new(0)<br />        <span class="variable">@state_transitions</span> = {}<br />        <span class="variable">@random_prob</span> = 0.05<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> new_game(player)<br />        <span class="variable">@player</span> = player<br />        <span class="variable">@states_visited</span> = []<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> choose_move(game)<br />        moves = game.moves<br />        <span class="keyword">if</span> !<span class="variable">@state_transitions</span>[game.state_id] <span class="keyword">or</span> rand &lt; random_prob<br />          move = moves[rand(moves.length)]<br />        <span class="keyword">else</span><br />          move_id = <span class="variable">@state_transitions</span>[game.state_id].max{ |(ma,sa),(mb,sb)|<br />            <span class="variable">@state_values</span>[sa] &lt;=&gt; <span class="variable">@state_values</span>[sb]<br />          }[0]<br />          move = moves.select{|m| m.move_id == move_id}[0]<br />        <span class="keyword">end</span><br />        move<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> inform_of_move(before, after, move)<br />        <span class="variable">@states_visited</span> &lt;&lt; before.state_id &lt;&lt; after.state_id<br />        (<span class="variable">@state_transitions</span>[before.state_id] ||= {})[move.move_id] =<br />          after.state_id<br /><br />        <span class="keyword">if</span> after.final?<br />          winner = after.winner<br />          <span class="keyword">if</span> winner<br />            value = winner == <span class="keyword">self</span>.player ? 100.0 : -1000.0<br />          <span class="keyword">else</span><br />            value = 0.0<br />          <span class="keyword">end</span><br /><br />          factor = 1.0<br />          <span class="keyword">while</span> state = <span class="variable">@states_visited</span>.pop<br />            <span class="variable">@state_values</span>[state] = (1.0 - factor) * <span class="variable">@state_values</span>[state] +<br />              factor * value<br />            factor *= 0.5<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The initialize() method sets up Brian's @state_values and @state_transitions, which constitute the AI's brain.</p>
+			<p>@state_values will hold scores for the positions the AI has won or lost with before.  @state_transitions holds a "map" of how to get from position to position.  When these are filled in, the AI will have "learned" what positions are desirable and how it can reach them.</p>
+			<p>Knowing this, choose_move() is easy to breakdown.  It checks to see if it knows anything about the moves from the current position.  If it does, it selects the highest score it can find for itself (else branch).  If it doesn't, it goes with a random choice from all available moves (if branch).</p>
+			<p>The final piece of the puzzle is inform_of_move().  This method remembers all moves made in the game, mainly.  When it sees a final position, it scores all those moves based on whether it won or lost.  The scoring scale is slanted, to encourage the AI to avoid losses.</p>
+			<p>That's the heart of Brian's solution.  The rest of the code is interface, client/server, a perfect minimax player, and Tic-Tac-Toe details.</p>
+			<p>For the curious, this quiz was inspired by the research of Donald Michie.  In 1961 he built a "machine" that learned to play perfect Tic-Tac-Toe against humans, using matchboxes and beads.  He called the machine MENACE (Matchbox Educable Naughts And Crosses Engine).</p>
+			<p>304 matchboxes where labeled with images of Tic-Tac-Toe positions and filled with colored beads representing possible moves.  At each move, a bead would be rattled out of the proper box to determine a move.  When MENACE would win, more beads of the colors played would be added to each position box.  When it would lose, the beads were left out to discourage these moves.</p>
+			<p>Michie claimed that he trained MENACE in 220 games, being beaten by it eight out of the final ten games.</p>
+			<p>Thanks to those who tried this one, successful or not.  Sorry it turned out to be a bit involved.</p>
+			<p>Tomorrow, "How Ruby Can Help You Beat Your Grandmother In Scrabble" is the topic.  If your grandmother is anything like mine, you'll appreciate all the help you can get!</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/123429">Brian Schr&ouml;der</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/123431">Brian Schr&ouml;der (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/123669">Thomas Leitner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/123752">Thomas Leitner (2)</a></li>
+			</ol>
+			<p><a href="quiz11_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Sokoban (#5)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Sokoban (#5)</span>
+			<p>Ruby isn't the only good thing to come out of Japan.  The computer game Sokoban, invented by Hiroyuki Imabayashi, was introduced by Thinking Rabbit of Takarazuka, Japan in 1982.  This simple game of logic puzzles was an instant success.  It won awards and spawned sequels.  Over the years, Sokoban has been ported to a huge number of platforms.  Fan support remains strong and many of those fans even produce new levels for the game.</p>
+			<p>This week's quiz is to implement the game of Sokoban with the interface of your choosing and any extra features you would like to have.</p>
+			<p>Sokoban (which translates to "Warehouse Man") has simple rules, which basically amount to push crates into their storage spots in the warehouse.  The elements of the levels are simple:  The "man", crates, walls, open floor, and storage.  Different level designers use various symbols to represent these items in level data files.  Here's one possible mix:</p>
+			<p class="example">@       for the man<br />o       for crates<br />#       for walls<br />&lt;space&gt; for open floor<br />.       for storage</p>
+			<p>Now because a man or a crate can also be on a storage space, we need special conditions to represent those setups:</p>
+			<p class="example">*       for crate on storage<br />+       for man on storage</p>
+			<p>Using this, we can build an extremely simple level:</p>
+			<p class="example">#####<br />#.o@#<br />#####</p>
+			<p>This level is completely surrounded by walls, as all Sokoban levels must be.  Walls are, of course, impassable.  In the center we have from left to right:  A storage space, a crate (on open floor), and the man (also on open floor).</p>
+			<p>(The original Sokoban levels were 19 x 16, but later levels have varied in size.)</p>
+			<p>The game is played by moving the man up, down, left and right.  When the man moves towards a crate, he may push it along in front of him as long as there is no wall or second crate behind the one being pushed.  A level is solved when all crates are on storage spaces.</p>
+			<p>Given those rules, we can solve our level above with a single move to the left, yielding:</p>
+			<p class="example">#####<br />#*@ #<br />#####</p>
+			<p>That simple system can lead to some surprisingly complicated mind benders, but please don't take my word for it.  Here are some levels to test your game engine and your logic skills:</p>
+			<p><a href="http://www.rubyquiz.com/sokoban_levels.txt">Classic Sokoban Levels</a></p>
+			<p>(Note:  These levels are Copyrighted by Thinking Rabbit.  You may play them but not profit from them in any way.)</p>
+			<p>Be warned, Sokoban is extremely addictive!</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Well, how far did you get?  I'm stuck on level 28 myself.</p>
+			<p style="text-align: center"><img src="images/sokoban.jpg" alt="" width="299" height="321" /></p>
+			<p>As those of you who have now built Sokoban know, the game is quite trivial to implement.  Here's a very brief solution from Dennis Ranke:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Level<br />      <span class="keyword">def</span> initialize(level)<br />        <span class="variable">@level</span> = level<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> play<br />        <span class="keyword">while</span> count_free_crates &gt; 0<br />          printf <span class="string">"\n%s\n\n&gt; "</span>, <span class="keyword">self</span><br />          c = gets<br />          c.each_byte <span class="keyword">do</span> |command|<br />            <span class="keyword">case</span> command<br />              <span class="keyword">when</span> ?w<br />                move(0, -1)<br />              <span class="keyword">when</span> ?a<br />                move(-1, 0)<br />              <span class="keyword">when</span> ?s<br />                move(0, 1)<br />              <span class="keyword">when</span> ?d<br />                move(1, 0)<br />              <span class="keyword">when</span> ?r<br />                <span class="keyword">return</span> <span class="keyword">false</span><br />            <span class="keyword">end</span><br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />        printf <span class="string">"\n%s\nCongratulations, on to the next level!\n"</span>, <span class="keyword">self</span><br />        <span class="keyword">return</span> <span class="keyword">true</span><br />      <span class="keyword">end</span><br /><br />    private<br /><br />      <span class="keyword">def</span> move(dx, dy)<br />        x, y = find_player<br />        dest = <span class="keyword">self</span>[x+dx, y+dy]<br />        <span class="keyword">case</span> dest<br />          <span class="keyword">when</span> ?<span class="comment">#</span><br />            <span class="keyword">return</span><br />          <span class="keyword">when</span> ?o, ?*<br />            dest2 = <span class="keyword">self</span>[x+dx*2, y+dy*2]<br />            <span class="keyword">if</span> dest2 == 32<br />              <span class="keyword">self</span>[x+dx*2, y+dy*2] = ?o<br />            <span class="keyword">elsif</span> dest2 == ?.<br />              <span class="keyword">self</span>[x+dx*2, y+dy*2] = ?*<br />            <span class="keyword">else</span><br />              <span class="keyword">return</span><br />            <span class="keyword">end</span><br />            dest = (dest == ?o) ? 32 : ?.<br />        <span class="keyword">end</span><br />        <span class="keyword">self</span>[x+dx, y+dy] = (dest == 32) ? ?@ : ?+<br />        <span class="keyword">self</span>[x, y] = (<span class="keyword">self</span>[x, y] == ?@) ? 32 : ?.<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> count_free_crates<br />        <span class="variable">@level</span>.scan(<span class="string">/o/</span>).size<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> find_player<br />        pos = <span class="variable">@level</span>.index(<span class="string">/@|\+/</span>)<br />        <span class="keyword">return</span> pos % 19, pos / 19<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> [](x, y)<br />        <span class="variable">@level</span>[x + y * 19]<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> []=(x, y, v)<br />        <span class="variable">@level</span>[x + y * 19] = v<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> to_s<br />        (0...16).map {|i| <span class="variable">@level</span>[i * 19, 19]}.join(<span class="string">"\n"</span>)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    levels = File.readlines(<span class="string">'sokoban_levels.txt'</span>)<br />    levels = levels.map {|line| line.chomp.ljust(19)}.join(<span class="string">"\n"</span>)<br />    levels = levels.split(<span class="string">/\n {19}\n/</span>).map{|level| level.gsub(<span class="string">/\n/</span>, <span class="string">''</span>)}<br /><br />    levels.each <span class="keyword">do</span> |level|<br />      <span class="keyword">redo</span> <span class="keyword">unless</span> Level.new(level.ljust(19*16)).play<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Dennis decided to keep the levels in their text format and lean on Ruby's text processing strengths.  This probably doesn't make for the prettiest of solutions, but it is short.</p>
+			<p>Level.play() is the primary interface for the code above.  It handles one level, start to finish, returning true if the level was solved and false if it was restarted.  It checks for a level being solved by looping until Levels.count_free_crates() returns 0.  That method simply scan()s for "o" characters, returning a count.  When a player enters a move command, work is handed off to the game-play routine Level.move().</p>
+			<p>The first step to performing a move is to find the player.  Level.find_player() uses a combination of index() and simple math to locate a "@" or "+" character.  (Note:  This is a weakness of Dennis' solution.  It only works for levels 19 characters wide and smaller.)  Once found, move() checks the square in front of the player.  If it's a wall, it disallows the move and if it's open, the player moves.  The special case is when there is a crate in front of the player.  When found, move() looks farther forward to ensure that the path is clear and if it is, both crate and player are moved.  All this testing and swapping is handled with Level.[]() and Level.[]=(), which function as expected.</p>
+			<p>For a more abstract OO solution, check out the code sent in by Dave Burt.</p>
+			<p>So, as I've said and we've now seen, implementing Sokoban is pretty easy stuff.  Extra features weren't too popular, but some did allow for a way to restart levels.  That is pretty critical in Sokoban, where you can easily get yourself stuck.  Dave Burt's solution includes a debugging mode that allows you to feed the game engine pure Ruby.  My solution also provided Undo, Save, and Load.  I think a level editor and a solver would make interesting additions.</p>
+			<p>Let's talk about one more thing though.  Interface.  To a game, interface is critical.  Dennis Ranke's and Dave Burt's games read line-oriented input, requiring you to push enter/return to send a move.  While they do allow you to queue up a long line of moves, this tires my poor little fingers out, especially on involved levels.</p>
+			<p>That begs the question, why did they use this approach?</p>
+			<p>Portability, would be my guess.  Reading a single character from a terminal interface can get tricky, depending on which operating system you are running on.  Here's how I do it on Unix:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> read_char<br />        system <span class="string">"stty raw -echo"</span><br />        STDIN.getc<br />    <span class="keyword">ensure</span><br />        system <span class="string">"stty -raw echo"</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Here's one way you might try the same thing on Windows:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> read_char<br />        require <span class="string">"Win32API"</span><br /><br />        Win32API.new(<span class="string">"crtdll"</span>, <span class="string">"_getch"</span>, [], <span class="string">"L"</span>).Call<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>If you want your game to run on both, you may need to write code to detect the platform and use the proper method.  Here's one way you might accomplish that:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">begin</span><br />        require <span class="string">"Win32API"</span><br /><br />        <span class="keyword">def</span> read_char<br />            Win32API.new(<span class="string">"crtdll"</span>, <span class="string">"_getch"</span>, [], <span class="string">"L"</span>).Call<br />        <span class="keyword">end</span><br />    <span class="keyword">rescue</span> LoadError<br />        <span class="keyword">def</span> read_char<br />            system <span class="string">"stty raw -echo"</span><br />            STDIN.getc<br />        <span class="keyword">ensure</span><br />            system <span class="string">"stty -raw echo"</span><br />        <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>That doesn't cover every platform, but I believe it will work with Windows and most Unix flavors (including Mac OS X).  That may be enough for some purposes.</p>
+			<p>Other submissions dealt with this differently.  G.Durga Prasad's solution used Curses.  Curses is standard Ruby, but unfortunately not so standard in the Windows world.  A great advantage to this approach was being able to use the arrow keys, which makes for the best interface, I think.</p>
+			<p>I believe Florian Gross also used the arrow keys, but his solution doesn't seem to support my platform.  He used the Ruby/Gosu game library to build a graphical Sokoban.</p>
+			<p>Thomas Leitner provided another Curses solution in addition to one that requires FXRuby, a Ruby interface to the FOX GUI library.  Thomas's submission is also a brilliant piece of AI, since it knew to tell me "You are the greatest player in history!!!"</p>
+			<p>My own solutions either relied on a Unix terminal or a Ruby/OpenGL library being installed.</p>
+			<p>Interface work can get neck deep in external dependancies pretty quick it seems.  Since games are largely defined by their interface, that can make for some complex choices.  Maybe we should hope for a Swing-like addition to the Ruby Standard Library sometime in the future.</p>
+			<p>My thanks to the game writers and game players.</p>
+			<p>Look for our second contributed quiz topic tomorrow morning, this time by Jamis Buck...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/118540">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/118554">G.Durga Prasad</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/118577">Dennis Ranke</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/118586">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/118601">Florian Gross</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/118958">Thomas Leitner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201932">Morton Goldberg</a></li>
+			</ol>
+			<p><a href="quiz5_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

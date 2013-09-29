@@ -1,0 +1,86 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Numeric Maze (#60)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Numeric Maze (#60)</span>
+			<p>by Christer Nilsson</p>
+			<p>You have a starting point and a target, say 2 and 9.
+ 
+You have a set of three operations:</p>
+			<p class="example">double<br />halve    (Odd numbers cannot be halved.)<br />add_two</p>
+			<p>Problem: Move from the starting point to the target, minimizing the number of operations.</p>
+			<p class="example">Examples:<br /><br />solve(2,9)  # =&gt; [2,4,8,16,18,9]<br />solve(9,2)  # =&gt; [9,18,20,10,12,6,8,4,2]</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>As with so many of our Ruby Quiz problems, this is another pathfinding challenge.  We're probably pretty use to seeing that pruning of the search space is usually a big win in these cases and this problem is no exception.  Let's talk a little about exactly why that is the case.</p>
+			<p>When you think about the operations allowed by this quiz, one thing that becomes obvious is that n * 2 and n / 2 are opposites.  If you do one and then the other, you end up right back at the number you had before you applied any operations.  That kind of busy work isn't helpful.  In fact, visiting any number a second time is pointless since we've already seen an equal or faster path for the same thing.</p>
+			<p>There's a lot more duplication in the problem than the opposite operations too.  Let's start working 2 to 9 by hand, so we can see that:</p>
+			<p class="example">2<br />  2, 4  (double)<br />    2, 4, 8  (double)<br />      2, 4, 8, 16  (double)<br />      2, 4, 8, 4   (halve)<br />      2, 4, 8, 10  (add two)<br />    2, 4, 2  (halve)<br />      2, 4, 2, 4  (double)<br />      2, 4, 2, 1  (halve)<br />      2, 4, 2, 4  (add two)<br />    2, 4, 6  (add two)<br />      2, 4, 6, 12  (double)<br />      2, 4, 6, 3   (halve)<br />      2, 4, 6, 8   (add two)<br />  2, 1  (halve)<br />    2, 1, 2  (double)<br />      2, 4, 2, 4  (double)<br />      2, 4, 2, 1  (halve)<br />      2, 4, 2, 4  (add two)<br />    2, 1, 3  (add two)<br />      2, 4, 3, 6  (double)<br />      2, 4, 3, 5  (add two)<br />  2, 4  (add two)<br />    2, 4, 8  (double)<br />      2, 4, 8, 16  (double)<br />      2, 4, 8, 4   (halve)<br />      2, 4, 8, 10  (add two)<br />    2, 4, 2  (halve)<br />      2, 4, 2, 4  (double)<br />      2, 4, 2, 1  (halve)<br />      2, 4, 2, 4  (add two)<br />    2, 4, 6  (add two)<br />      2, 4, 6, 12  (double)<br />      2, 4, 6, 3   (halve)<br />      2, 4, 6, 8   (add two)</p>
+			<p>There's a lot of paths already and we're not there yet.  Let's look at the exact same tree, but with one simple rule of pruning applied:  We can toss out any operation that results in a number we have already seen.  Watch how that changes things:</p>
+			<p class="example">2<br />  2, 4  (double)<br />    2, 4, 8  (double)<br />      2, 4, 8, 16  (double)<br />      2, 4, 8, 10  (add two)<br />    2, 4, 6  (add two)<br />      2, 4, 6, 12  (double)<br />      2, 4, 6, 3   (halve)<br />  2, 1  (halve)<br />    2, 1, 3  (add two)<br />      2, 4, 3, 5  (add two)</p>
+			<p>Those two trees go to the same depth and both represent the same set of numbers.  However, the second one is over three times less work.  Imagine how much we can save as the numbers keep growing and growing.</p>
+			<p>Another important optimization involves limits.  Even with our simple 2 to 9 example, we can be up to 64 after only five operations (2, 4, 8, 16, 32, 64).  64 is a long way from 9 and probably not helping us get there.  We can limit upper and lower bounds for the numbers, or even by limiting the steps the path can take.  (Florian Pflug made a great post in the quiz thread about the latter.)  The only thing to be careful of with an optimization like this is that you make sure you don't impose a limit low enough to prevent an optimal solution.</p>
+			<p>Many other optimizations were used.  Some, like storing instance data in Integer objects, have that questionable code smell and are probably best avoided.  Other solutions, while super fast on huge inputs, did not produce the shortest path in all cases.  Finally, many optimizations involve timing various elements of Ruby syntax for minor increases here and there, but that's more detail than we need to go into in this summary.  Given that, let's examine a nice solution, by Tristan Allwood, using the two optimizations described above:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'set'</span><br /><br />    <span class="keyword">class</span> MazeSolver<br /><br />      <span class="keyword">def</span> solve start, finish<br />        visited = Set.new<br /><br />        tul, tll = <span class="keyword">if</span> start &gt; finish<br />                     [(start &lt;&lt; 1) + 4, <span class="keyword">nil</span>]<br />                   <span class="keyword">else</span><br />                      [(finish &lt;&lt; 1) + 4, <span class="keyword">nil</span>]<br />                   <span class="keyword">end</span><br /><br />        solve_it [[start]], finish, visited, tul, tll<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> solve_it lpos, target, visited, tul, tll<br />        n = []<br />        lpos.each <span class="keyword">do</span> |vs|<br />          v = vs.last<br />          <span class="keyword">next</span> <span class="keyword">if</span> tul <span class="keyword">and</span> v &gt; tul<br />          <span class="keyword">next</span> <span class="keyword">if</span> tll <span class="keyword">and</span> v &lt; tll<br /><br />          <span class="keyword">return</span> vs <span class="keyword">if</span> v == target<br /><br />          d = v &lt;&lt; 1                      <span class="comment"># double</span><br />          h = v &gt;&gt; 1 <span class="keyword">unless</span> (v &amp; 1) == 1  <span class="comment"># half</span><br />          p2 = v + 2                      <span class="comment"># plus 2</span><br /><br />          n &lt;&lt; (vs.clone &lt;&lt; d) <span class="keyword">if</span> visited.add? d<br />          n &lt;&lt; (vs.clone &lt;&lt; h) <span class="keyword">if</span> h <span class="keyword">and</span> visited.add? h<br />          n &lt;&lt; (vs.clone &lt;&lt; p2) <span class="keyword">if</span> visited.add? p2<br />        <span class="keyword">end</span><br /><br />        <span class="keyword">return</span> solve_it(n, target, visited,tul, tll)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$0</span><br />      puts MazeSolver.new.solve(ARGV[0].to_i, ARGV[1].to_i).join(<span class="string">" "</span>)<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Tristan's solution makes use of bit operations, because they tend to be faster than multiplication and division.  All you need to know about these is that n &lt;&lt; 1 == n * 2 and n &gt;&gt; 1 == n / 2.</p>
+			<p>The primary interface method for the code above is solve().  It takes the start and finish numbers.  As you can see, it sets up a visited Set object to keep track of the numbers we've seen, assigns upper and lower limits, then hands off to solve_it().</p>
+			<p>In solve_it(), each path of numbers is walked and expanded by the three operations.  Note the calls to visited.add?() before new paths are added.  This is the optimization keeping us from revisiting numbers.  The next if tul and v &gt; tul line skips to the next iteration if we've passed the upper limit.  That's the other big optimization.  After another level of paths have been added, solve_it() just recurses to find the next set of operations.  This only ever goes as deep as there are steps in the solution, so there's not much danger of overrunning the stack for problems we can reasonably solve.</p>
+			<p>The final if statement of the program triggers the process from the two parameters passed to the program.</p>
+			<p>My thanks to the many, many participants that generated great solutions and discussion, especially all you new guys!  I also need to thank the quiz creator who was very involved in the discussion and gave me a bunch of tips for this summary.</p>
+			<p>Tomorrow, we have a dice rolling challenge for all you RPG players out there...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173463">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173473">Tris</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173474">Simon Strandgaard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173477">Ilmari Heikkinen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173478">Maurice Codik</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173480">Kenneth Collins</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173488">Horndude77</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173489">Jim Menard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173498">Dave Lewis</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173502">Justin Bishop</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173506">Pablo Hoch</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173508">Steven Aerts</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173510">Christer Nilsson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173512">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173518">Gregory Seidman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173534">Chris Parker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173540">Phil Tomson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173559">J. Ryan Sobol</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173612">Dominik Bathon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173622">J. Ryan Sobol (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173644">0x002A</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173672">Kero</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173682">Zed Lopez</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173694">Kenneth Collins (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173725">Daniel Sheppard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173729">Peter Burns</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173842">0x002A (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173908">Matthew D Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173924">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/173985">Nathan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/174059">Steven Aerts (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/174073">Christer Nilsson (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/174074">Matthew D Moss (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/174079">Simon Kr&ouml;ger (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/174154">Christer Nilsson (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/174290">Christer Nilsson (4)</a></li>
+			</ol>
+			<p><a href="quiz60_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

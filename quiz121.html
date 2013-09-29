@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Morse Code (#121)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Morse Code (#121)</span>
+			<p>The idea for this quiz was given to me by Yossef Mendelssohn.</p>
+			<p>Morse code is a way to encode telegraphic messages in a series of long and short sounds or visual signals.  During transmission, pauses are used to group letters and words, but in written form the code can be ambiguous.</p>
+			<p>For example, using the typical dot (.) and dash (-) for a written representation of the code, the word ...---..-....- in Morse code could be an encoding of the names Sofia or Eugenia depending on where you break up the letters:</p>
+			<p class="example">...|---|..-.|..|.-    Sofia<br />.|..-|--.|.|-.|..|.-  Eugenia</p>
+			<p>This week's quiz is to write program that displays all possible translations for ambiguous words provided in code.</p>
+			<p>Your program will be passed a word of Morse code on STDIN.  Your program should print all possible translations of the code to STDOUT, one translation per line.  Your code should print gibberish translations in case they have some meaning for the reader, but indicating which translations are in the dictionary could be a nice added feature.</p>
+			<p>We will only focus on the alphabet for this quiz to keep things simple.  Here are the encodings for each letter:</p>
+			<p class="example">A .-            N -.<br />B -...          O ---<br />C -.-.          P .--.<br />D -..           Q --.-<br />E .             R .-.<br />F ..-.          S ...<br />G --.           T -<br />H ....          U ..-<br />I ..            V ...-<br />J .---          W .--<br />K -.-           X -..-<br />L .-..          Y -.--<br />M --            Z --..</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>I always forget how much I love the simple problems.  Everyone plays when we have them and the solutions tend to be quite creative.  This time was no different.  Everyone did see MenTaLguY's state machine parser, right?</p>
+			<p>Solving the problem, even with the suggested extra credit, is easy stuff though.  Let's have a look at Bob Showalter's solution to see just how easy.  Here's the start of the code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># set to dictionary file to load</span><br />    DICT = <span class="string">'/usr/share/dict/words'</span><br /><br />    <span class="keyword">class</span> Morse<br /><br />     <span class="variable">@@words</span> = <span class="keyword">nil</span><br /><br />     LETTER = Hash[*<span class="string">%w/<br />        A .-            N -.<br />        B -...          O ---<br />        C -.-.          P .--.<br />        D -..           Q --.-<br />        E .             R .-.<br />        F ..-.          S ...<br />        G --.           T -<br />        H ....          U ..-<br />        I ..            V ...-<br />        J .---          W .--<br />        K -.-           X -..-<br />        L .-..          Y -.--<br />        M --            Z --..<br />     /</span>]<br /><br />     <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Here we see some setup work.  Bob defines a constant to point at the dictionary on his system.  The comment encourages you to tweak this for your system.</p>
+			<p>Next we have a the start of a class definition.  This class is really just used as a namespace.  No objects are ever constructed from it.  Given that, a module definition might have better represented it's purpose.</p>
+			<p>The class variable will hold the actual dictionary words, assuming the user requests that we load it.  More on that in a bit.</p>
+			<p>Finally, we have a wonderful little trick that many solvers picked up on.  It's possible to write some Ruby that will allow you to paste the translation chart from the quiz directly into your code and actually have that be a meaningful data structure.  Here we see the whole thing converted into a whitespace delimited Array, which is then splatted into Hash form.  Every other element becomes a key or value, so we end up with Morse code values keyed by the English letter it translates to.  Very clever stuff.</p>
+			<p>Here's the dictionary loading code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">     <span class="comment"># ...</span><br /><br />     <span class="comment"># loads dictionary file to limit the words output</span><br />     <span class="keyword">def</span> <span class="keyword">self</span>.load_dictionary(path)<br />       <span class="variable">@@words</span> = {}<br />       File.open(path, <span class="string">'r'</span>) <span class="keyword">do</span> |f|<br />         <span class="keyword">while</span> word = f.gets<br />           <span class="variable">@@words</span>[word.chomp.upcase] = <span class="keyword">true</span><br />         <span class="keyword">end</span><br />       <span class="keyword">end</span><br />     <span class="keyword">end</span><br /><br />     <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method creates a Hash to hold the words, reads the indicated file line by line, peels off line endings, and normalizes word case, filling the Hash as it reads.  Most solutions that included dictionary handling had a chunk of code very similar to this.  This particular version could be simplified a touch by using File.foreach().</p>
+			<p>The last method of Bob's class does the heavy lifting:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">     <span class="comment"># ...</span><br /><br />     <span class="comment"># returns list of words starting with prefix that can be made from code</span><br />     <span class="keyword">def</span> <span class="keyword">self</span>.words(code = <span class="variable">@code</span>, prefix = <span class="string">''</span>)<br />       results = []<br />       <span class="keyword">if</span> code == <span class="string">''</span><br />         results &lt;&lt; prefix <span class="keyword">if</span> <span class="variable">@@words</span>.nil? || <span class="variable">@@words</span>.include?(prefix)<br />       <span class="keyword">else</span><br />         LETTER.sort.each <span class="keyword">do</span> |l, p|<br />           <span class="keyword">if</span> code[0, p.length] == p<br />             results += words(code[p.length,code.length], prefix + l)<br />           <span class="keyword">end</span><br />         <span class="keyword">end</span><br />       <span class="keyword">end</span><br />       results<br />     <span class="keyword">end</span><br /><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This is a very straightforward recursive decoder.  We get two parameters here:  the remaining code (ignore that unused default) and any prefix we should apply to words generated from that code.  You can see that the method defines, fills, and returns an Array of results.  How those results are generated is the interesting bit.</p>
+			<p>The if statement branch comes into play when we run out of code to translate.  In that case, the word is added to the results, as long as no dictionary was loaded or the word is in the loaded dictionary.  This means that you can run this code without using a dictionary to see all options or with a dictionary to see only likely matches.</p>
+			<p>The else branch handles all cases where we have some code left.  When that happens, each letter is tried at the start of the code.  If it matches, the method recurses using the code after the matched letter and the existing prefix plus the new letter.  All words generated from the recursive calls are added to the current result set.  This generates all possible combinations.</p>
+			<p>I should note here that there was some discussion over similar code from Donald A. Ball Jr. that yielded the words to a block instead of collecting them in an Array.  This is probably a good move for this particular decoder, since there are a surprising 5,104 possible translations of the simple code provided in the quiz.  Collecting larger translations in an Array might get a bit resource intensive.  Bob's method is easily converted:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># changed to use a block by JEG2</span><br />    <span class="keyword">def</span> <span class="keyword">self</span>.words(code, prefix = <span class="string">''</span>, &amp;block)<br />      <span class="keyword">if</span> code == <span class="string">''</span><br />        block[prefix] <span class="keyword">if</span> <span class="variable">@@words</span>.nil? || <span class="variable">@@words</span>.include?(prefix)<br />      <span class="keyword">else</span><br />        LETTER.sort.each <span class="keyword">do</span> |l, p|<br />          <span class="keyword">if</span> code[0, p.length] == p<br />            results += words(code[p.length,code.length], prefix + l, &amp;block)<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Note the three simple changes:  I added the block as a parameter, I pass finished words to the block instead of placing them in an Array, and I hand the block down the stack when we recurse.  This removes the need for the results Array, so I have also trimmed that code.</p>
+			<p>Getting back to Bob's solution, here is the application code that makes it run:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    Morse.load_dictionary(DICT) <span class="keyword">if</span> ARGV.delete(<span class="string">'-d'</span>)<br />    abort <span class="string">"Usage: #{$0} [-d] code [...]"</span> <span class="keyword">if</span> ARGV.empty?<br />    ARGV.each <span class="keyword">do</span> |code|<br />     puts <span class="string">"#{code}:"</span><br />     puts Morse.words(code) <span class="comment"># Morse.words(code) { |w| puts w } with the block</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>First we see the optional dictionary flag interpretation.  We've already talked about how the code changes depending on whether or not a word list is loaded.</p>
+			<p>The next line is a usage statement printed by abort().  We don't see that method too often in quiz solutions, but it prints a message to STDERR, when provided, and then terminates the program.  Note that the usage statement tells us this code differs slightly from the quiz interface, taking the code as a command-line argument instead of reading it from STDIN.</p>
+			<p>That last iterator just walks the provided codes printing the translations returned from a call to Morse.words().</p>
+			<p>---.-- -.....--.-.-... ---- .-.-...-.. .--....--- -.-..--. .-...--.. -----.-..... -.-.----... (.-.-.-.----...-.. -...-.-- --.-.-.-.- -...--.--... ...---.-....--..----.)</p>
+			<p>Tomorrow we have another easy, though more practical, challenge...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248685">Harry Mathews</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248687">Gareth Adams</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248688">Christian Theil Have</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248690">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248693">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248696">Drew Olson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248697">I. P.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248698">Joseph Seaton</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248699">Kyle Schmitt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248703">Abhijit Gadgil</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248713">Erik Veenstra</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248714">Erik Veenstra (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248715">Mark Day</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248720">Matt Hulse</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248724">Jes&uacute;s Gabriel y Gal&aacute;n</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248725">Donald A. Ball Jr.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248728">darren kirby</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248729">Donald A. Ball Jr. (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248740">Bob Showalter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248741">James Barnett</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248749">Yosse Mendelssohn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248769">Daniel Martin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248783">Bob Lisbonne</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248785">Rub&eacute;n Medell&iacute;n</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248804">Stuart Holden</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248806">Colin A. Bartlett</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248822">Wolfgang Seeberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248836">Paul</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248852">Bob Lisbonne (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248858">MenTaLguY</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248952">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/248999">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249098">Brian Krahmer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249118">Jesse Merriman (2)</a></li>
+			</ol>
+			<p><a href="quiz121_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+  <title>Ruby Quiz - Text Munger (#76)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Text Munger (#76)</span>
+			<p>by Matthew Moss</p>
+			<p class="example">Now terhe is a fnial rseaon I thnik that Jsues syas, "Lvoe your<br />emneies." It is tihs: taht love has wtiihn it a remvpidtee pewor. And<br />three is a pwoer three taht eellvtanuy tfranrmsos idvlinaidus. Taht's<br />why Juess syas, "Love your emeeins."  Bsceaue if you hate your<br />enmeies, you have no way to reedem and to tarfnrsom your eenmeis. But<br />if you love yuor emienes, you wlil decsiovr that at the vrey root of<br />love is the pwoer of rdoemptein. You just keep loinvg pepole and keep<br />lnivog tehm, even tgouhh they're mteitnsiarg you. Hree's the porsen<br />who is a nhoeigbr, and tihs psoren is dnoig simhoetng wrong to you and<br />all of that. Just keep being fnrdliey to that preosn. Keep liovng<br />them. Don't do atnynhig to earsmrbas tehm. Just keep lvonig them, and<br />they can't stand it too long. Oh, they raect in mnay ways in the<br />bineningg. They react wtih brnetitess beucase they're mad bauesce you<br />lvoe them like that. Tehy raect wtih gluit flegines, and setioemms<br />they'll hate you a lltite more at that tinoiasrtn piroed, but just<br />keep lvniog them. And by the poewr of your love tehy will beark down<br />uendr the load. That's lvoe, you see. It is retpmevide, and tihs is<br />why Juess says love. Trehe's shimeotng aubot love that blidus up and<br />is cavrtiee. Trehe is stmeonihg aubot hate that tares dwon and is<br />disettvrcue. So lvoe your eenmeis.</p>
+			<p>On first glance, the above may appear to be gibberish, but you may find that you can actually read this portion of a speech from Dr Martin Luther King Jr.  The brain has an amazing capacity to compensate for things that aren't quite right, and one study has shown that when the first and last letters of words are left alone but those in the middle are scrambled, the text is often still quite comprehensible.</p>
+			<p>Your task for this quiz, then, is to take a text as input and output the text in this fashion. Scramble each word's center (leaving the first and last letters of each word intact). Whitespace, punctuation, numbers -- anything that isn't a word -- should also remain unchanged.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Obviously, this is not an overly difficult problem.  Here's a small, but pretty easy to follow solution by Gordon Thiesfeld:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> String<br /><br />      <span class="keyword">def</span> munge<br />        split(<span class="string">/\b/</span>).munge_each.join<br />      <span class="keyword">end</span><br /><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">class</span> Array<br /><br />      <span class="keyword">def</span> munge_each<br />        map { |word| word.split(<span class="string">//</span>).munge_word }<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> munge_word<br />        first,last,middle = shift, pop,scramble<br />        <span class="string">"#{first}#{middle}#{last}"</span><br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> scramble<br />        sort_by{rand}<br />      <span class="keyword">end</span><br /><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$PROGRAM_NAME</span><br /><br />      <span class="keyword">begin</span><br />        puts File.open(ARGV[0], <span class="string">'r'</span>).read.munge<br />      <span class="keyword">rescue</span><br />        puts <span class="string">"Usage:  text_munge.rb file"</span><br />      <span class="keyword">end</span><br /><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The flow here is simple:  bust up the document into words, munge all words, and stitch it back together.  Munging a word is just separating it into characters and rearranging everything but the first and last character.</p>
+			<p>Probably the trickiest line in the whole deal is the first and only line in munge().  It breaks the passed document on word boundaries, which will be every place a word begins and ends.  Thus, given the sentence:</p>
+			<p class="example">Here is a simple sentence, for testin' scripts.</p>
+			<p>Gordon's code will break the document into this Array:</p>
+			<p class="example">[ "Here", " ", "is", " ", "a", " ", "simple", " ", "sentence", ", ",<br />  "for", " ", "testin", "' ", "scripts", ".\n" ]</p>
+			<p>It's important to remember that this is the Regular Expression definition of "words", including digit characters and the underscore.  That's not a perfect match for the quiz task, but was a popular choice nonetheless.</p>
+			<p>Now, I did say *all* words are scrambled and that is what I meant.  A run of four or more punctuation characters is a word, and the middle punctuation would be scrambled.  In practice, this is rare enough to be a minor issue.</p>
+			<p>I made a bit of a fuss about multi-byte characters during the discussion, which some people did try to satisfy.  It's only fair I add detail here.</p>
+			<p>There are many multi-byte character encodings, but I will focus on just the UTF8 encoding, because I am way out of my league with anything else.  If you are unfamiliar with Unicode encodings, this article is a pretty good general introduction:</p>
+			<p><a href="http://www.joelonsoftware.com/printerFriendly/articles/Unicode.html">A Unicode Introduction</a></p>
+			<p>The Ruby specifics are harder to come by, sadly.</p>
+			<p>Basically, Ruby's Unicode support (UTF8 encoding only) is through regular expressions (using matches or methods like split()).  They can be made character aware (instead of bytes) by properly setting $KCODE.  Here's an example:</p>
+			<p class="example">$ cat byte_string.rb<br />#!/usr/local/bin/ruby -w<br /><br />"résumé".split("").each { |chr| p chr }<br />$ ruby byte_string.rb<br />"r"<br />"\303"<br />"\251"<br />"s"<br />"u"<br />"m"<br />"\303"<br />"\251"<br />$ cat utf8_string.rb<br />#!/usr/local/bin/ruby -w<br /><br />$KCODE = "UTF8"<br /><br />"résumé".split("").each { |chr| p chr }<br />$ ruby utf8_string.rb<br />"r"<br />"é"<br />"s"<br />"u"<br />"m"<br />"é"</p>
+			<p>Notice that when I didn't set $KCODE, the two-byte letter is split.  However, when I tell Ruby to be Unicode aware, they stay together.</p>
+			<p>That should tell you enough background to spot the solutions that can handle it from the ones that can't, giving you more examples to look at.  Here's a multi-byte aware solution from Ross Bamford (-Ku is a shortcut for $KCODE = "UTF8"):</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/local/bin/ruby -Ku</span><br />    <span class="global">$stdout</span> &lt;&lt; ARGF.read.gsub(<span class="string">/\B((?![\d_])\w{2,})\B/</span>) <span class="keyword">do</span> |w|<br />      <span class="global">$&</span>amp;.split(<span class="string">//</span>).sort_by { rand }<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>That's mainly just a more compact version of Gordon's script.  This time though, we are interested in the results of running it.  Watch the é hop around as I run it a few times:</p>
+			<p class="example">$ ruby Ross\ Bamford/scramble.rb test_document.txt<br />Actheatd is my rsuémé.<br />$ ruby Ross\ Bamford/scramble.rb test_document.txt<br />Aaectthd is my rmséué.<br />$ ruby Ross\ Bamford/scramble.rb test_document.txt<br />Aatcethd is my rémsué.</p>
+			<p>Gordon's solution is non multi-byte aware out of the box.  Watch how things change with that:</p>
+			<p class="example">$ ruby Gordon\ Thiesfeld/scramble.rb test_document.txt<br />Achttead is my résumé.<br />$ ruby Gordon\ Thiesfeld/scramble.rb test_document.txt<br />Aehttacd is my résumé.<br />$ ruby Gordon\ Thiesfeld/scramble.rb test_document.txt<br />Aheatctd is my résum?.?</p>
+			<p>In order to make sense of that, you need to see how the code found the words in that line:</p>
+			<p class="example">["Attached", " ", "is", " ", "my", " ", "r", "\303\251", "sum", "\303\251.\n"]</p>
+			<p>See how the last é is lumped in with the end punctuation?  That makes the group of characters long enough to scramble.  Then they are junk characters my terminal doesn't know how to display.</p>
+			<p>The good news is, we can magically fix Gordon's script:</p>
+			<p class="example">$ ruby -Ku Gordon\ Thiesfeld/scramble.rb test_document.txt<br />Aatcehtd is my réumsé.<br />$ ruby -Ku Gordon\ Thiesfeld/scramble.rb test_document.txt<br />Athetcad is my rmuésé.<br />$ ruby -Ku Gordon\ Thiesfeld/scramble.rb test_document.txt<br />Atcthead is my rmséué.</p>
+			<p>We probably can't fix all the solutions like this though.  It depends on how they separated the word into letters.</p>
+			<p>The downside of this is that it makes it harder to recognize word characters, without the digits and underscores.  Filtering out punctuation is a lot harder when we expand to such a vast definition of characters.   I'm not aware of a good Ruby solution for that issue yet.  (Please enlighten me if you are!)</p>
+			<p>My thanks to Matthew for another great quiz and to all who gave it a shot.</p>
+			<p>Tomorrow we will build a simple tool for those of you showing off your code in an IRC channel...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189849">Alex Barrett</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189899">Himadri Choudhury</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189918">Albert Vernon Smith</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189921">Ross Bamford</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189926">Stefano Taschini</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189931">Jesse H-K</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189934">Robert Retzbach</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189936">A LeDonne</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189939">Mike</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189942">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189943">ara.t.howard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189945">Logan Capaldo</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189950">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189953">Gordon Thiesfeld</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189956">Ryan Leavengood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189959">Andrew Johnson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189972">Kurt Dresner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189973">Aviv Nitson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189974">Hew Wolff</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189975">Sergy Volkov</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189976">Robert Beal</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189977">Lee Butterman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189978">Jeroen Heijmans</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189979">Jason Zaugg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189980">Gregory Seidman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189987">Barry Dmytro</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/190003">Tom Moertel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/190032">Yoann Guillot</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/190037">Tristan Allwood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/190088">joey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/190103">Tom Armitage</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/190105">Al Gordon</a></li>
+			</ol>
+			<p><a href="quiz76_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

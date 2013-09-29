@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Current Temperature (#68)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Current Temperature (#68)</span>
+			<p>by Caleb Tennis</p>
+			<p>Write a Ruby program such that given a certain argument to the program it
+will return the current temperature of that location.  People living in
+the United States may be interested in temperature by ZIP code:</p>
+			<p class="example">$ ruby current_temp.rb 47201<br />The temperature in Columbus, Indiana is 32 degrees F.</p>
+			<p>Other locales may want to use their own mailing codes, or city names:</p>
+			<p class="example">$ ruby current_temp.rb madrid<br />The temperature in Madrid, Spain is 12 degrees C.</p>
+			<p>Which arguments you support is up to you.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Obviously, this quiz is about fetching data from the Internet.  People went about this in two different ways.  The most popular solution was to "scrape" the answer from popular Internet weather sites.  Here is one such solution from David Tran:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'uri'</span><br />    require <span class="string">'open-uri'</span><br />    require <span class="string">'rexml/document'</span><br /><br />    <span class="keyword">class</span> Weather<br />      attr_reader :location, :temperature, :unit<br /><br />      <span class="keyword">def</span> initialize(zip_or_city, unit=<span class="string">'f'</span>)<br />        raise <span class="string">"Error: Unit must be 'C' or 'F'."</span> <span class="keyword">unless</span> unit =~ <span class="string">/^[cf]$/</span>i<br />        id = get_id(zip_or_city)<br />        url = <span class="string">"http://xml.weather.yahoo.com/"</span> +<br />              <span class="string">"forecastrss/#{id}_#{unit.downcase}.xml"</span><br />        xml = open(url) { |f| f.read }<br />        doc = REXML::Document.new(xml)<br />        <span class="variable">@temperature</span> = doc.elements[<span class="string">'/rss/channel/item/yweather:condition/@temp'</span>].<br />                           to_s.to_i<br />        <span class="variable">@unit</span> = unit.upcase<br />      <span class="keyword">end</span><br /><br />      private<br />      <span class="keyword">def</span> get_id(location)<br />        location = URI.escape(location)<br />        url = <span class="string">"http://xoap.weather.com/search/search?where=#{location}"</span><br />        xml = open(url) { |f| f.read }<br />        doc = REXML::Document.new(xml)<br />        locations = doc.elements.to_a(<span class="string">"/search/loc"</span>)<br />        raise <span class="string">"Cannot find the location."</span> <span class="keyword">if</span> locations.size &lt;= 0<br />        <span class="variable">@location</span> = locations[0].text.sub(<span class="string">/\s*\(\d+\)\s*$/</span>, <span class="string">''</span>)<br />        locations[0].attributes[<span class="string">'id'</span>]<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$0</span><br />      <span class="keyword">if</span> ARGV.size &lt;= 0 || (ARGV[1] &amp;&amp; ARGV[1] !~ <span class="string">/^[cf]$/</span>i)<br />        puts <span class="string">"Usage:  #$0  city_or_zip_code  [c|f]"</span><br />        exit(1)<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">begin</span><br />        w = Weather.new(ARGV[0], ARGV[1] || <span class="string">'f'</span>)<br />        puts <span class="string">"The temperature in #{w.location} is "</span> +<br />             <span class="string">"#{w.temperature} degress #{w.unit}."</span><br />      <span class="keyword">rescue</span><br />        puts <span class="string">"Information for #{ARGV[0]} was not found or unavailable."</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Start at the bottom if statement.  You can see in here that arguments are checked and a usage statement is printed, if needed.  Next we can see that a Weather object is constructed and the temperature information is pulled from its methods.  If anything goes wrong in this process, the rescue clause prints a suitable error message.</p>
+			<p>Now we need to check out the Weather object.</p>
+			<p>In initialize(), the zip_or_city is somehow turned into an "id".  Using that id, a url is constructed for an RSS feed of weather information for the location.  Next the terrific open-uri library is used to slurp the feed, just as we would a normal file.  The xml is then dropped into Ruby's standard REXML library and an XPath statement is used to extract the temperature from the feed.</p>
+			<p>The other method is the magic "id" conversion I mentioned earlier.  It really works pretty similar to the method we just examined.  Again a url is constructed, the page slurped, the xml handed to REXML, and XPath used to find a matching location that was listed on the page.  This time a Regexp is also needed to clean up the location name.</p>
+			<p>Unfortunately, scraping has some down sides.  First, this use of REXML and Regexps to grab the information is pretty fragile.  As soon as these pages change in some way the author didn't expect, the application is broken and will need maintenance.</p>
+			<p>The other big problem with scraping is legal issues.  Many sites do not allow access to their content like this (because it bypasses their ads).  Google is a famous example of a company that does not allow scraping content.  Be sure you check the usage policies of a site before you construct or use software like this.</p>
+			<p>If you want to get around these issues, you can use a web service.  Web services represent a predefined communication protocol.  You pass the information the service expects in, and it will return a promised response.  Here's a temperature solution using a web service by Rudolfs Osins:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/local/bin/ruby</span><br />    require <span class="string">'soap/wsdlDriver'</span><br />    require <span class="string">'rexml/document'</span><br /><br />    URL = <span class="string">'http://www.webservicex.net/globalweather.asmx?WSDL'</span><br /><br />    <span class="comment"># process the comandline arguments</span><br />    <span class="keyword">if</span> ARGV[0] == <span class="keyword">nil</span><br />      abort(<span class="string">"Usage: weather.rb city"</span>)<br />    <span class="keyword">else</span><br />      city = ARGV.join(<span class="string">' '</span>)<br />    <span class="keyword">end</span><br /><br />    soap = SOAP::WSDLDriverFactory.new(URL).create_rpc_driver<br />    <span class="keyword">begin</span><br />      weather = soap.GetWeather(:CityName =&gt; city, :CountryName =&gt; <span class="string">""</span>)<br /><br />      <span class="comment"># strip the first line with &lt;? ?&gt; stuff, else REXML wont parse</span><br />      xml = weather.getWeatherResult.gsub(<span class="string">/(&lt;\?.*?&gt;\n)/</span>, <span class="string">''</span>)<br />      data = REXML::Document.new(xml)<br /><br />      <span class="comment"># celsius degrees are in parentheses</span><br />      data.elements[<span class="string">"//Temperature"</span>].text[<span class="string">/\((.*)\)/</span>]; temp = <span class="global">$1</span><br />      data.elements[<span class="string">"//Location"</span>].text[<span class="string">/^(.*),/</span>]; loc = <span class="global">$1</span><br /><br />      <span class="comment"># show the gathered data</span><br />      puts <span class="string">"The temperature in "</span> + loc + <span class="string">" is "</span> + temp<br />    <span class="keyword">rescue</span><br />      puts <span class="string">"Could not find data for your supplied city: "</span> + city<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Here again, we see that a URL is built, but this time the URL points to the document describing the web service (a Web Service Description Language, or WSDL, document).  Another standard library, SOAP, is used to read and parse that document.  In doing so, it will build a custom object that has the methods provided by the service, accepting the arguments they expect.</p>
+			<p>The rest of the solution will look pretty familiar, since this service provides an xml answer.  Again REXML is used, with XPath, to find the data we are interested in and again Regexps are used to clean it up for display.  In this case we didn't get too far away from the fragile scraping technique it seems, though web services typically see less change than web pages.</p>
+			<p>Not that the above solution doesn't work with zip codes, because the service expects a city name.  Supporting a zip code might be possible using another service to lookup the city name, if one could be found.</p>
+			<p>My thanks to all the submitters for another great quiz.  Pulling information from the web is pretty common and these guys did a great job of showing off how painless it can be.</p>
+			<p>Tomorrow's quiz is an easy, but unique, problem.  If you have yet to complete a quiz solution, this one is for you...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181573">Shane Emmons</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181579">Ross Bamford</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181580">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181586">Kurt Dresner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181600">Rudolfs Osins</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181604">Aditya Mahajan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181606">Ryan Leavengood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181609">Jay Anderson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181610">gordon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181622">Jeff McNeil</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181630">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181708">Shane Emmons (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181712">Harley Pebley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181728">Robert Retzbach</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181751">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181754">gordon (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181794">Jay Anderson (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/181928">Patrick Chanezon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182156">David Tran (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/182229">dave</a></li>
+			</ol>
+			<p><a href="quiz68_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

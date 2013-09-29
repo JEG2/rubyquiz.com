@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - GEDCOM Parser (#6)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">GEDCOM Parser (#6)</span>
+			<p>by Jamis Buck</p>
+			<p><b>GEDCOM Parser</b></p>
+			<p>GEDCOM is the "GEnealogical Data COMmunication" file format. It is a plain-text electronic format used to transfer genealogical data. (The purpose of this quiz is not to debate whether it is a particularly *good* file format or not--but it is certainly more compact than the corresponding XML would be, and bandwidth was particularly important back when the standard was developed.)</p>
+			<p>The purpose of this quiz is to develop a simple parser than can convert a GEDCOM file to XML.</p>
+			<p><b>GEDCOM Format</b></p>
+			<p>The GEDCOM file format is very straightforward. Each line represents a node in a tree. It looks something like this:</p>
+			<p class="example">0 @I1@ INDI<br />1 NAME Jamis Gordon /Buck/<br />2 SURN Buck<br />2 GIVN Jamis Gordon<br />1 SEX M<br />...</p>
+			<p>In general, each line is formatted thus:</p>
+			<p class="example">LEVEL TAG-OR-ID [DATA]</p>
+			<p>The LEVEL is an integer, representing the current depth in the tree. If subsequent lines have greater levels than the current node, they are children of the current node.</p>
+			<p>TAG-OR-ID is either a tag that identifies the type of data in that node, or it is a unique identifier. Tags are 3- or 4-letter words in uppercase. The unique identifiers are always text surrounded by "@" characters (i.e., "@I54@"). If an ID is given, the DATA is the type of the subtree that is identified.</p>
+			<p>So, to take the example given above apart:</p>
+			<p><i>1)</i> "0 @I1@ INDI". This starts a new subtree of type INDI (individual). The id for this individual is "@I1@".</p>
+			<p><i>2)</i> "1 NAME Jamis Gordon /Buck/". This starts a NAME subtree with a value of "Jamis Gordon /Buck/".</p>
+			<p><i>3)</i> "2 SURN Buck". This is a subelement of the NAME subtree, of type SURN ("surname").</p>
+			<p><i>4)</i> "2 GIVN Jamis Gordon". As SURN, but specifies the given name of the individual.</p>
+			<p><i>5)</i> "1 SEX M". Creates a new subelement of the INDI element, of type "SEX" (i.e., "gender").</p>
+			<p>And so forth.</p>
+			<p>Variable whitespace is allowed between the level and the tag. Blank lines are ignored.</p>
+			<p><b>The Challenge</b></p>
+			<p>The challenge, then, is to create a parser that takes a GEDCOM file as input and converts it to XML. The snippet of GEDCOM given above would become:</p>
+			<p class="example">&lt;gedcom&gt;<br />  &lt;indi id="@I1@"&gt;<br />    &lt;name value="Jamis Gordon /Buck/"&gt;<br />      &lt;surn&gt;Buck&lt;/surn&gt;<br />      &lt;givn&gt;Jamis Gordon&lt;/givn&gt;<br />    &lt;/name&gt;<br />    &lt;sex&gt;M&lt;/sex&gt;<br />    ...<br />  &lt;/indi&gt;<br />  ...<br />&lt;/gedcom&gt;</p>
+			<p><b>Sample Input</b></p>
+			<p>There is a large GEDCOM file online containing the lineage of various European royalty. You may download it from <a href="http://search.cpan.org/src/PJCJ/Gedcom-1.11/royal.ged">http://search.cpan.org/src/PJCJ/Gedcom-1.11/royal.ged</a> (yah, it's a CPAN link, but it had the highest bandwidth of any other URL I found via Google). (This particular link makes generous use of whitespace to increase the readability of the file.)</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This quiz generated some interesting discussion on Ruby Talk.  Some details of the GEDCOM format were talked about and the proper way to handle XML output was debated.  I don't want to fill this summary with that conversation (visit the archives for the "[QUIZ]" thread, if you missed it), but I do want to point out the best point made about the XML format.  Here's what Hans Fugal had to say about it:</p>
+			<p class="example">I take issue with the example XML in the quiz because I am from the<br />"data in text, metadata in attributes" camp, and the name is not<br />metadata. Here is a snippet of the output that I am generating:<br /><br />  &lt;INDI id='@I11@'&gt;<br />    &lt;NAME&gt;Itha /Steele/&lt;SURN&gt;Steele&lt;/SURN&gt;<br />      &lt;GIVN&gt;Itha&lt;/GIVN&gt;<br />    &lt;/NAME&gt;<br />    &lt;SEX&gt;F&lt;/SEX&gt;<br />    &lt;_UID&gt;38CC16658231D511ACB8E07C9CE21378E1AF&lt;/_UID&gt;<br />    &lt;FAMS&gt;@F12@&lt;/FAMS&gt;<br />    &lt;FAMC&gt;@F4@&lt;/FAMC&gt;<br />  &lt;/INDI&gt;</p>
+			<p>I have yet to fall in love with XML like the rest of the world, but I think Hans makes a good point here.</p>
+			<p>The solution submitted by Florian Gross also supported YAML and "pretty print" output.</p>
+			<p>Formats aside, submitted solutions varied in how much they interpreted from the GEDCOM file as opposed to simple translation.  The most common change between input and output was to build a single entity out of GEDCOM's CONC and CONT fields.</p>
+			<p>XML generation techniques were also varied among submissions.  Some of us built-up our own Strings, others used REXML, Cedric Foll used XmlSimple and Jim Weirch used his Builder package, described here:</p>
+			<p><a href="http://onestepback.org/index.cgi/Tech/Ruby/BuilderObjects.rdoc">Builder Objects</a></p>
+			<p>Now let's look at a solution.  Here's the code submitted by Hans Fugal:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#! /usr/bin/ruby</span><br />    require <span class="string">'rexml/document'</span><br /><br />    doc = REXML::Document.new <span class="string">"&lt;gedcom/&gt;"</span><br />    stack = [doc.root]<br /><br />    ARGF.each_line <span class="keyword">do</span> |line|<br />      <span class="keyword">next</span> <span class="keyword">if</span> line =~ <span class="string">/^\s*$/</span><br /><br />      <span class="comment"># parse line</span><br />      line =~ <span class="string">/^\s*(\d+)\s+(@\S+@|\S+)(\s(.*))?$/</span> <span class="keyword">or</span> raise <span class="string">"Invalid GEDCOM"</span><br />      level = <span class="global">$1</span>.to_i<br />      tag = <span class="global">$2</span><br />      data = <span class="global">$4</span><br /><br />      <span class="comment"># pop off the stack until we get the parent</span><br />      <span class="keyword">while</span> (level+1) &lt; stack.size<br />        stack.pop<br />      <span class="keyword">end</span><br />      parent = stack.last<br /><br />      <span class="comment"># create XML tag</span><br />      el = <span class="keyword">nil</span><br />      <span class="keyword">if</span> tag =~ <span class="string">/@.+@/</span><br />        el = parent.add_element data<br />        el.attributes[<span class="string">'id'</span>] = tag<br />      <span class="keyword">else</span><br />        el = parent.add_element tag<br />        el.text = data<br />      <span class="keyword">end</span><br /><br />      stack.push el<br />    <span class="keyword">end</span><br />    doc.write(<span class="global">$stdout</span>,0)<br />    puts<br /><br /></div></div>
+			<p>The above starts by creating a REXML document and a stack for managing parent/child relationships.  With setup out of the way, the code reads from STDIN or files specified as command-line arguments, line by line.</p>
+			<p>The processing of each line is a three stage process:  Parse the line, unwind the stack to the parent for this element, and finally add the element to the parent through the REXML API and push the new element onto the stack.</p>
+			<p>When it's all been read, the complete XML is dumped to STDOUT.</p>
+			<p>Obviously, Hans' solution doesn't do any special handling of the GEDCOM format.  It's a simple parse and print solution.</p>
+			<p>If aren't going to use a great library like REXML to generate XML output, remember to handle your own escaping.  (See my submission for an example of code that forgot to do this!  Oops.)</p>
+			<p>If you are a person who deals with GEDCOM files outside of this quiz, you may want to check out these links passed to me by Jamis Buck:</p>
+			<p class="example">If you go to <a href="http://www.familysearch.com">http://www.familysearch.com</a>, you can search for <br />ancestors/relatives and download their information in GEDCOM format.<br /><br />There are also a variety of tools available for taking a GEDCOM file <br />and creating a website from it. In fact, if you go to <br /><a href="http://www.onepagegenealogy.com">http://www.onepagegenealogy.com</a> you can have a wall-chart sized <br />pedigree chart printed from a GEDCOM file for $20. (That particular <br />project is a research project here at BYU.)</p>
+			<p>My thanks go out to Jamis for our second contributed quiz, and a good topic at  that.  I've got two more contributed quizzes waiting in the wings, which is great news.  Keep 'em coming!</p>
+			<p>Stay tuned folks, because it's Game Show time with tomorrow's Ruby Quiz...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119415">Florian Gross</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119421">Dennis Ranke</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119426">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119429">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119465">Hans Fugal</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119470">Jamis Buck</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119494">Jim Weirch</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119521">Bryan Kang</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/119534">Cedric Foll</a></li>
+			</ol>
+			<p><a href="quiz6_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

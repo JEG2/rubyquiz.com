@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Fractals (#125)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Fractals (#125)</span>
+			<p>by Drew Olson</p>
+			<p>When I learned about fractals in high school math class, I immediately found them fascinating. For those of you unfamiliar with the concept, the definition from Wikipedia is as follows: a fractal is "a rough or fragmented geometric shape that can be subdivided in parts, each of which is (at least approximately) a reduced-size copy of the whole".</p>
+			<p>At the end of the unit in which we were taught them, the fractal below was a test question. In subsequent years, I began drawing it freehand to higher and higher levels. The details and patterns that emerge are fascinating.</p>
+			<p>The goal is to create a ruby program which takes the level as an argument and then draws the fractal shown below to the specified level. The fractal is created by drawing the first level, then repeating the pattern such that each base piece is replaced with the fractal from the higher level. Thus, to move from level 1 to level 2, we replace each line with the shape at level 1. Notice that the position changes as well, meaning if the line is vertical we replace it with a vertically positioned shape of level 1 (right and left facing also matter). I have shown the first 3 levels below (including the base component at level 0). Feel free to use the console for output or get fancy with RMagick or something similar.</p>
+			<p class="example">                          _                  &lt;-- Level 0<br />                          _<br />                        _| |_                &lt;-- Level 1<br />                          _<br />                        _| |_<br />                      _|     |_              &lt;-- Level 2<br />                    _|_       _|_<br />                  _| |_|     |_| |_<br /><br />                          _<br />                        _| |_<br />                      _|     |_<br />                    _|_       _|_<br />                  _| |_|     |_| |_<br />                _|                 |_<br />              _|_                   _|_ <br />            _| |_|                 |_| |_    &lt;-- Level 3<br />          _|                             |_<br />        _|_                               _|_<br />      _| |_|_   _                   _   _|_| |_<br />    _|     |_|_|_|                 |_|_|_|     |_<br />  _|_       _|_|_                   _|_|_       _|_<br />_| |_|     |_| |_|                 |_| |_|     |_| |_</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>I lied to Morton Goldberg.</p>
+			<p>I told him I thought a turtle graphics solution would be a unique approach not many people would try.  Boy was I wrong!  That turns out to be the easiest way to attack this problem and the solvers knew that a lot better than I did.</p>
+			<p>The solutions are very diverse and I had a hard time picking what to show.  Some solutions allowed you to customize the fractal drawn.  Others offered various forms of output, including some pretty pictures.  Jesse Merriman's solution did it all and I do recommend having a peek at that code.</p>
+			<p style="text-align: center"><img src="images/fractal_F_FLFRFRFLF_3.png" alt="" width="290" height="150" /></p>
+			<p>For this summary though, I'm going to show Donald Ball's solution.  I think it captured the technique most people used well and it also included a unique form of output.  Let's take a look:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> instructions(level=1, list=[:forward])<br />      <span class="keyword">if</span> level == 1<br />        list<br />      <span class="keyword">else</span><br />        instructions(level-1, list.map <span class="keyword">do</span> |item|<br />          <span class="keyword">case</span> item<br />            <span class="keyword">when</span> :forward<br />              [:forward, :left, :forward, :right,<br />               :forward, :right, :forward, :left, :forward]<br />            <span class="keyword">else</span> item<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span>.flatten)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method sums up the shortcuts pretty much everyone used.  First, we have turtle graphics style drawing.  If we assume a turtle starts facing east, the Array in the middle of this method contains the instructions to draw level one of the fractal.  It's much easier to work with a format like this than it is to edit a large String or Array of paths.</p>
+			<p>The other shortcut was a simplification of the drawing pattern.  It turns out that just replacing all occurrences of the level zero pattern with the level one pattern is all it takes to transform any level of the pattern into the next level.</p>
+			<p>Knowing that, this method is a recursive implementation of those shortcuts.  It begins with the level zero pattern and for each level it performs the replacement I mentioned earlier.  The end result will be a long path for drawing the entire target level.</p>
+			<p>The next step is to convert those directions into and collection of points that could be plotted:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    DIRECTIONS = [:east, :south, :west, :north]<br /><br />    <span class="keyword">def</span> plot(instructions)<br />      p = [0, 0]<br />      points = [p]<br />      direction = :east<br />      instructions.each <span class="keyword">do</span> |item|<br />        <span class="keyword">case</span> item<br />          <span class="keyword">when</span> :forward<br />            p = p.dup<br />            <span class="keyword">case</span> direction<br />              <span class="keyword">when</span> :east: p[0] += 1<br />              <span class="keyword">when</span> :south: p[1] -= 1<br />              <span class="keyword">when</span> :west: p[0] -= 1<br />              <span class="keyword">when</span> :north: p[1] += 1<br />            <span class="keyword">end</span><br />            points &lt;&lt; p<br />          <span class="keyword">when</span> :left<br />            direction = DIRECTIONS[(DIRECTIONS.index(direction) - 1) % 4]<br />          <span class="keyword">when</span> :right<br />            direction = DIRECTIONS[(DIRECTIONS.index(direction) + 1) % 4]<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />      points<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method generates a collection of points from the path of :forward, :left, and :right instructions.  It works by tracking the direction the turtle is currently facing and moving by incrementing the points as indicated for that direction.  Turns simply change the direction.</p>
+			<p>Now, it's not so easy to flatten the coordinates into an ASCII art string and we really want to see these fractals as an image anyway, so Donald opted for an unusual means of output.  Donald's program builds a web page that can draw the fractal (as long as it is displayed in Safari or Firefox).  Here's the code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> to_html(points, width=600, height=400)<br />      length = [width/points.map {|p| p[0]}.max,<br />                height/points.map {|p| p[1]}.max].min<br />      points.map! {|p| p.map {|x| x*length}}<br />      s = <span class="string">'&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" '</span><br />      s &lt;&lt; <span class="string">'"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"&gt;'</span><br />      s &lt;&lt; <span class="string">"\n&lt;html&gt;&lt;head&gt;"</span><br />      s &lt;&lt; <span class="string">"&lt;script type='text/javascript'&gt;\n"</span><br />      s &lt;&lt; <span class="string">"&lt;!--\n"</span><br />      s &lt;&lt; <span class="string">"function draw() {\n"</span><br />      s &lt;&lt; <span class="string">"var context = document.getElementById('canvas').getContext('2d');\n"</span><br />      s &lt;&lt; <span class="string">"context.lineWidth = 1;\n"</span><br />      s &lt;&lt; <span class="string">"context.strokeStyle = '#ff0000';\n"</span><br />      s &lt;&lt; <span class="string">"context.beginPath();\n"</span><br />      p = points.shift<br />      s &lt;&lt; <span class="string">"context.moveTo(#{p[0]},#{p[1]});\n"</span><br />      points.each {|p| s &lt;&lt; <span class="string">"context.lineTo(#{p[0]}, #{p[1]});\n"</span> }<br />      s &lt;&lt; <span class="string">"context.stroke();\n"</span><br />      s &lt;&lt; <span class="string">"}\n"</span><br />      s &lt;&lt; <span class="string">"//--&gt;\n"</span><br />      s &lt;&lt; <span class="string">"&lt;/script&gt;"</span><br />      s &lt;&lt; <span class="string">"&lt;body onload='draw()'&gt;"</span><br />      s &lt;&lt; <span class="string">"&lt;canvas id='canvas' width='#{width}' height='#{height}'&gt;&lt;/canvas&gt;"</span><br />      s &lt;&lt; <span class="string">"&lt;/body&gt;&lt;/html&gt;"</span><br />      s<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The work here is pretty simple.  First the code finds a good line width for the fractal by measuring how much space the canvas has for width and height.  All the points are then scaled by that length.  This is done with simple multiplication since the scale was previously one.</p>
+			<p>The output is some HTML preamble followed by a JavaScript section that does the real work.  The prepares a drawing context and then literally just plays connect the dots with the points.  There's a little more HTML to close things up and invoke the drawing routine and, presto, we have a self drawing web page.</p>
+			<p>As written, this code draws fractals upside down (in comparison to the quiz examples).  If you want to flip them over, just change to two #{p[1]} interpolations in the JavaScript to #{height - p[1]}.</p>
+			<p>We're just short the code to kick-off the process:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">if</span> <span class="global">$0</span> == <span class="keyword">__FILE__</span><br />      puts to_html(plot(instructions(ARGV[0].to_i))) <span class="keyword">if</span> ARGV.length == 1<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>As usual, this code is trivial.  Generate instructions() for the requested lever, hand those off to plot() to get the coordinates, and filter those through to_html() to get a printable web page.</p>
+			<p>My thanks to all who showed me just how powerful turtle graphics can be.  I should have never doubted.</p>
+			<p>Tomorrow we will give a little time to a problem that has been making the rounds in the hope of making ourselves more employable...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253207">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253210">Mariusz Pękala</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253217">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253216">Ken Bloom (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253223">Morton Goldberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253227">Philip</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253228">Wolfgang Seeberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253229">Geoff Hulette</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253230">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253239">Drew Olson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253246">Raf Coremans</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253429">Donald Ball</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253437">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253502">Jim Truher</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253511">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253680">David Tran</a></li>
+			</ol>
+			<p><a href="quiz125_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

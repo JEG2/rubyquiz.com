@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Barrel of Monkeys (#30)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Barrel of Monkeys (#30)</span>
+			<p>by Gavin Kistner</p>
+			<p>Last week one of the local radio stations was having a "Barrel of Monkey" afternoon. While a song was playing, listeners would call in and suggest the next song, which had to begin with the same letter as the current song ended in.</p>
+			<p>So, for example, a sample (eclectic) Barrel of Monkeys playlist might be:</p>
+			<p class="example">Peace Train<br />No More "I Love You's"<br />Super Trooper<br />Rock Me, Amadeus<br />Song of the South<br />Hooked on a Feeling<br />Go Tell it on the Mountain<br />...<br />(See how each song name begins with the last letter of the song before it?)</p>
+			<p>Just creating ANY playlist would be too easy, however. We need a Worthy Problem to solve.</p>
+			<p class="example">1) Given any starting and ending song, create a playlist that connects the<br />   two songs.<br /><br />2) For extra credit, try to create a playlist of a specific duration (to<br />   fill a particular time slot on the radio).<br /><br />3) For more extra credit, try to find the shortest playlist that links the<br />   songs. (Either in terms of number of songs, or total play time.)</p>
+			<p>You can find an XML file with over 5,000 song names and play time at http://rubyquiz.com/SongLibrary.xml.gz (100k compressed). The song durations are in milliseconds.</p>
+			<p>Finally, because this problem may be enough fun without having to discover trouble yourself, I offer a few (spoiler?) things to think about below. (Far below, in case you want to skip them.)</p>
+			<p>THE END OF THIS QUIZ MENTIONS A FEW PITFALLS THAT I THOUGHT OF WHILE WRITING IT UP</p>
+			<p>IT'S UP TO YOU TO DECIDE IF YOU WANT TO READ THEM</p>
+			<p>I DON'T HAVE ANY DOMAIN KNOWLEDGE IN THIS PROBLEM AREA
+AND I HAVEN'T TRIED TO SOLVE THE PROBLEM MYSELF
+SO THESE AREN'T SUBTLE NUANCES THAT WILL GREATLY HELP YOU</p>
+			<p>DO NOT READ ANY FURTHER IF YOU DO NOT WANT TO READ THEM</p>
+			<p>THERE IS NOTHING MORE OF ANY INTEREST IN THIS QUIZ AFTER THIS TEXT OTHER THAN THE PITFALLS</p>
+			<p>SO YOU DON'T NEED TO KEEP READING IF YOU WANT TO THINK ABOUT THE PROBLEM IN A VIRGIN STATE</p>
+			<p>I THINK THIS MAY BE ENOUGH OF A WARNING</p>
+			<p class="example">* What do you do with songs with names like "'74-'75" or "Seventy Times 7"<br />  or "=:0 :("?</p>
+			<p class="example">* How about a song named "Candy Everybody Wants (unplugged)" or "Voulez-Vous<br />  [Extended Remix, 1979 US Promo]" or "Speed Racer - Hardcore Mix" or<br />  "Breathe Remix Feat Sean Paul"?</p>
+			<p class="example">* What do you do if there IS no way to connect two songs? (And how do you<br />  know for sure?)</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>by Gavin Kistner</p>
+			<p>Before I begin my analysis of others solutions, let me share two things I learned, in the hopes that it will help someone else:</p>
+			<p>1) I procrastinate. (I didn't learn this - I already knew it.) I discovered this manifesting itself in my code as I repeatedly put off the hard part of actually creating the playlist, and ended up refactoring my classes about 6 times, and spending a full half hour on just cleaning up the names of the songs. I learned the importance of doing a 'red thread' spike - lay down the core functionality first, get it working, and then make it pretty later.</p>
+			<p>If you run out of time on a project, it's arguably better to have SOMETHING working, than a really nice solution that's only half implemented, and doesn't do anything.</p>
+			<p>2) <a href="http://c2.com/cgi/wiki?PrematureOptimization">Premature Optimization is the Root of All Evil</a> - I had plans to implement my solution in the most brain-dead simple way possible, and only then (if necessary) optimize it. Somewhere along the way I wandered off the path, and ended up using 'ugly' hashes of hashes for speed sake and a single recursive function. In the end, I did need to do a bit of optimization to get it to run reasonably (see below). But even before that, the damage to my code was severe enough that when I wanted to try out a variation on the algorithm, my own code was ugly enough to deter me from messing with it. Even after my optimization, however, the algorithm was pretty brain-dead stupid, and STILL finished in a tenth of a second.</p>
+			<p>Moral - don't kill yourself on optimization until you're sure it's necessary.</p>
+			<p>So, on to the code analysis. Every solution needed to do four things to succeed:</p>
+			<p class="example">1) Decide the parameters for the playlist to create (user input).<br />2) Load in the information for a song library.<br />3) Find a valid "Barrel of Monkeys" playlist based on the library<br />   and the playlist parameters.<br />4) Display the resulting solution.</p>
+			<p>Let's look at the solutions for each of these, spending the most time on the #3.</p>
+			<p class="example">==============================<br />Decide the Playlist Parameters<br />==============================</p>
+			<p>Ilmari, Pedro and I all picked songs at random from the library to make a path between. None of our solutions had any customization in terms of types of playlist to create. So much for the value of the Highline quiz ... it seems that UI is still an afterthought when it comes to solving a problem. :)</p>
+			<p>Brian's solution does support different kinds of playlists (any path, shortest path, and best time fill) but he didn't have time to create a user UI, so his solution hard codes a few start and end points and then solves them.</p>
+			<p>James' solution assumed that you would supply two command-line arguments, the names of the first and last songs. I hadn't know about the Enumerable#find method, so it was nice to see it used here (finding the first song which had the supplied substring somewhere in the song title). Beyond that, his solution had no further parameters needed for a playlist.</p>
+			<p>Dave didn't let you pick the specific songs to start and end with (you pick a letter for the first song should start with and a letter for the last song to end with), but otherwise went all out on the options - his solution supports finding playlists with minimum, maximum, and target number of songs and/or playlist duration. The console input provides defaults while entering, making things particularly convenient. So, apparently the Highline quiz was valuable after all. :)</p>
+			<p class="example">========================<br />Load in the Song Library<br />========================</p>
+			<p>The provided song library was an XML file. There were three approaches to handling this, with very different speed results:</p>
+			<p>Gavin, James, Ilmari and Brian all read the XML file using REXML, and then used it's access methods to create instances of a Song class. (Ilmari actually used zlib to load the gzipped version directly, with roughly no performance hit. Nice!)</p>
+			<p class="example">Time to load the XML file into an REXML Document: ~4s<br />Time to scrape the information from that into Song instances:<br />   Gavin: 28s (I did a lot of name cleaning during song initialization)<br />   James: 12s<br />   Ilmari: 4.5s<br />   Brian: 2.6s</p>
+			<p>Dave converted the library into YAML (how, I'm not sure) and loaded that directly.</p>
+			<p class="example">Time to load the YAML file of Songs: 1.5s</p>
+			<p>Pedro went hardcore and simply used regular expressions on each line of the XML file.</p>
+			<p class="example">Time to read the file and use regexp to find information: 0.2s</p>
+			<p>Gavin and Ilmari both dumped their libraries to a binary file using Marshal after parsing it the first time. I know that for me, this turned out to be a great decision, shaving 30+ seconds off every test iteration I had to do.</p>
+			<p class="example">Time to load a Marshalled file of songs: 0.1s</p>
+			<p>It appears that I was the only one who tried to do something about all the terribly-named songs in the song library I supplied. I used one of the solutions from the English Numerals quiz to turn integers into english words. I tried to intelligently remove various "remix" and "live" and "edit" variations on the name. In the end, I wish I hadn't - the english numerals were a nice touch (and let me use songs with names like "18" or "'74-'75"), but the rest was an exercise in futility. Any reasonable playlist system should assume that it's going to have a really nice, cleaned playlist fed to it. Regexp heuristics to clean up messy names just aren't a substitute for a few hours spent fixing one's ID3 tags. :)</p>
+			<p class="example">===================<br />Create the Playlist<br />===================</p>
+			<p>So, as the astute may have noticed, this quiz is really just a path-finding in fancy clothes. Just as Mapquest creates directions from point A to point B using roads connecting intersections, so this quiz is about finding your way from song A to song B. There are just a hell of a lot more roads connecting the intersections.</p>
+			<p>I'll cover my approach in depth, and then look at the code other participants supplied.</p>
+			<p>As I mentioned above, I decided that I would first try a really brain-dead algorithm and see how it performed. (I intended to try a solution on my own and later do research into optimized algorithms in this field, but never got around to the latter.)</p>
+			<p>After reading in all the songs, I partitioned them off into a Hash that mapped each letter of the alphabet to the songs that started with that letter. For each of those songs, I then figured out all the unique end letters that you could get to. For simplicity sake, whenever there were multiple songs with the same start/end letters (e.g. "All Out of Love" and "A Whiter Shade of Pale") I simply picked one of them at random and threw out the rest.</p>
+			<p>I also threw out all the cases where songs started with and ended with the same letter. These might be very useful in determining specific-length playlists, but I didn't want to deal with them.</p>
+			<p>The end result looked something like this:</p>
+			<p class="example">@song_links = {<br />    'a' =&gt; { 'c' =&gt; &lt;Song 'Aerodynamic'&gt;,<br />             'd' =&gt; &lt;Song 'All I Need'&gt;,<br />              ... },<br />    'b' =&gt; { 'a' =&gt; &lt;Song 'Bawitdaba'&gt;,<br />             'e' =&gt; &lt;Song 'Brother of Mine'&gt;,<br />             ... },<br />    ...<br />}</p>
+			<p>This hash of hashes was then my roadmap, telling me what intersections I could get to for each letter, and what songs I travelled along to take that path.</p>
+			<p>To walk 50 steps, you first have to walk 49 and then take the last step. Similarly, I decided that I would write a recursive function that checked to see if two songs could be linked together. If they could, that was the path. If not, take one 'step' forward - see if a path to the last song existed from each of the songs which connected to the first.</p>
+			<p>My first brain-dead approach just let me wander along each possibility until I found each match, and stored all the successes. (My idea was to find all the solutions and then select the shortest one from the list.) I quickly ran into neverending loops as I visited the same song again and again. So, I started passing along a string of all the letters I had already tried. Before taking a step to a new song, I checked to make sure it wasn't in this list.</p>
+			<p>NOW I WAS COOKING! Along with some debug output, I watched as my code began traverse the possibility path. And watch, and watch. I started thinking about it.</p>
+			<p>With 5000 songs evenly distributed across all the letters, and paths that can go 26 levels deep, my back-of-the-envelope calculations led me to realize there there were (very roughly) something like</p>
+			<p class="example">878,406,105,516,319,579,477,535,398,778,457, ...<br />892,291,056,669,879,055,897,379,772,997,878, ...<br />407,474,708,480,000,000,000</p>
+			<p>possible paths. Ooops. That would take a while to search the entire possibility tree. After waiting for 20 minutes, I realized I might have to wait a really long time.</p>
+			<p>So, I made one more adjustment - whenever I found a valid path, I stored the length of that path in an instance variable. Any time my recursive function tried to go deeper than than, I bailed out. (If know one route to get to the mall that takes 3 miles, and you start down a strange road looking for a shortcut, after you've gone more than 3 miles you know it's time to head home. You might be able to get to the mall by driving across the country and back, but it's not the solution you're looking for.)</p>
+			<p>And WHAM...my brain-dead solution went from taking longer than the universe has existed, to finding solutions in less than a second. Usually less than 1/10th of a second.</p>
+			<p>Take THAT, optimized algorithms! :)</p>
+			<p>[As a disclaimer, in the cases where no such path exists the code has to end up searching the entire possibility space, so...it essentially hangs when it can't find the right path.]</p>
+			<p>I had visions of using the same sort of solution to find a specific-length playlist: I would accumulate time as I recursed, and bail out once I had passed the limit. And then I went to bed instead. :)</p>
+			<p>So, on to looking at others' solutions, as best I can.</p>
+			<p>Pedro's solution appears to use recursion, like mine. I can't quite tell how it's preventing infinite circular lists, or how it goes so fast. It stores a list of possible solutions, and when finished it yields the list of all found solutions to a passed-in proc to determine which solution is correct.</p>
+			<p>So, for example, the line:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    result=search(songs, first, last, &amp;min_dur)<br /><br /></div></div>
+			<p>picks the playlist with the shortest duration from those it found, while:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    result=search(songs, first, last, &amp;min_len)<br /><br /></div></div>
+			<p>picks the playlist with the fewest songs.</p>
+			<p>Because Pedro's solution didn't do any song name cleaning, it can produce some interesting results:</p>
+			<p class="example">Proudest Monkey - Dave Matthews Band - 551 ms ===&gt;<br />    'Round The World With The Rubber Duck - C.W. McCall - 247 ms<br />Proudest Monkey - Dave Matthews Band - 551 ms<br />You May Be Right - Billy Joel - 255 ms<br />Teacher, Teacher - .38 Special - 193 ms<br />Rock Me - ABBA - 185 ms<br />Eden - 10,000 Maniacs - 250 ms<br />North - Afro Celt Sound System - 409 ms<br />Here Without You - 3 Doors Down - 238 ms<br />Under Attack - ABBA - 227 ms<br />Kelly Watch The Stars - Air [French Band] - 226 ms<br />Saguaro - A Small, Good Thing - 353 ms<br />Ostrichism - A Small, Good Thing - 152 ms<br />Mamma Mia - ABBA - 212 ms<br />All I Need - Air [French Band] - 268 ms<br />Does Your Mother Know - ABBA - 195 ms<br />When You're Falling - Afro Celt Sound System - 314 ms<br />God Must Have Spent A Little.. - Alabama - 203 ms<br />... to calm a turbulent soul - Falling You - 469 ms<br />Losing Grip - Avril Lavigne - 233 ms<br />Preacher in this Ring, Part I - Bruce Hornsby - 302 ms<br />Intergalactic - Beastie Boys - 231 ms<br />CDJ - Pizzicato Five - 344 ms<br />Jumpin' Jumpin' - Destiny's Child - 229 ms<br />'Round The World With The Rubber Duck - C.W. McCall - 247 ms</p>
+			<p>(Note the linkage of songs with apostrophes or periods. :)</p>
+			<p>However it traverses the results, it's speediness seems to be mitigated by results that aren't quite as short as possible. For example (after I hacked Pedro's code to ignore everything but spaces and letters in a title) it thinks that the shortest playlist between "Que Sera" and "Zaar" is:</p>
+			<p class="example">Que Sera - Ace of Base - 227 ms ===&gt; Zaar - Peter Gabriel - 178 ms<br />Que Sera - Ace of Base - 227 ms<br />Angeleyes - ABBA - 259 ms<br />Second Chance - .38 Special - 271 ms<br />Eden - 10,000 Maniacs - 250 ms<br />North - Afro Celt Sound System - 409 ms<br />Hold On Loosely - .38 Special - 279 ms<br />You May Be Right - Billy Joel - 255 ms<br />Teacher Teacher - .38 Special - 193 ms<br />Release It Instrumental - Afro Celt Sound System - 387 ms<br />Little Bird - Annie Lennox - 279 ms<br />Dont Talk - 10,000 Maniacs - 321 ms<br />Keepin Up - Alabama - 185 ms<br />Pluto - Björk - 199 ms<br />Ostrichism - A Small, Good Thing - 152 ms<br />Mountain Music - Alabama - 252 ms<br />Caught Up In You - .38 Special - 276 ms<br />Unknown Track  - Boards of Canada - 311 ms<br />in the Morning - LL Cool J - 222 ms<br />Get Me Off - Basement Jaxx - 289 ms<br />Fine and Mellow - Billie Holiday - 220 ms<br />Waltz - Gabriel Yared - 118 ms<br />Zaar - Peter Gabriel - 178 ms</p>
+			<p>while my code discovered this path (after I stole the code from James to pick start and end songs):</p>
+			<p class="example">Looking for a path between 'Que Sera' and 'Zaar'<br />#0 - Ace of Base :: Que Sera :: 3:47<br />#1 - Eric Serra :: A Bomb In The Hotel :: 2:15<br />#2 - Duke Ellington :: Limbo Jazz :: 5:14<br />#3 - Peter Gabriel :: Zaar :: 2:59<br />+0.2s to create playlist</p>
+			<p>James did a nice two-way search for his solution - instead of walking an ever-broadening possibility tree going from the start to the finish, he has the finish also start branching out at the same time until they meet. From a geometric perspective, a circle centered on the start point and touching the end point will cover twice the area of two circles centered on each point which just touch each other. This would seem to me to be an obvious benefit from both a speed and memory standpoint. (I had originally thought I would do something like this, but couldn't come up with a clear idea of how to implement it.)</p>
+			<p>I particularly like the incredible simplicity of James' code that does the work:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">until</span> (join_node = start.touch?(finish))<br />        start.grow<br />        finish.grow<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Ruby code can be so simple and expressive when done right! Another nice line (from Brian's code):</p>
+			<p class="example">connections = starts &amp; endings</p>
+			<p>Unfortunately, when I asked James' code to find the same path as above, it took a very long time (almost half an hour) to produce a result. I wish I had more domain knowledge (and time) to research why this was the case, with an algorithm that I though would be a better performer. (It does come up with a nice terse path, however:</p>
+			<p class="example">1: Que Sera by Ace of Base &lt;&lt;227422&gt;&gt;<br />2: All Through the Night by Cyndi Lauper &lt;&lt;269740&gt;&gt;<br />3: These Are Days by 10,000 Maniacs &lt;&lt;293067&gt;&gt;<br />4: Santa Cruz by David Qualey &lt;&lt;131053&gt;&gt;<br />5: Zaar by Peter Gabriel &lt;&lt;293355&gt;&gt;</p>
+			<p>I wanted to play more with Brian and Dave's solutions, but they also took a very long time to finish. The first time I ran Dave's solution it took over 2 hours and 400MB of RAM, and eventually dumped out every playlist it could find that matched the criteria I supplied. (A 1-3 song playlist between two letters that I forget, with no time constraints.)</p>
+			<p>As noted earlier, Dave's solution gives you the power to limit number of songs (min, max, and target) and playlist duration (again, min, max, and target). I wish I had thought of this - being able to take the number of recursive depths from 26 to something like 10 helps tremendously in terms of search space. Dave also notes that his code is a depth-first recursion, and seeing his exclamation point in the comment</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># (recursively, depth-first(!))</span><br /><br /></div></div>
+			<p>makes me realize that when searching for a shortest-path algorithm, a breadth-first search would almost certainly prove a better performer. Damn. :)</p>
+			<p>One thing I found particularly interesting in Dave's code was his way to specify Infinity as a starting point for a minimum-value algorithm:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    result.inject(1.0/0.0) <span class="keyword">do</span> |memo, pl|<br />      [ memo, (pl.total_duration - target_duration).abs ].min<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>In Javascript I've done stuff like that starting out with values like</p>
+			<p class="example">var theMin = Number.MAX_VALUE;</p>
+			<p>or</p>
+			<p class="example">var theMin = Infinity;</p>
+			<p>and had wished for a way to do the same in Ruby. I still wish for a nice portable Infinity constant, but Dave's solution here will do nicely for me for the future. Thanks Dave! :)</p>
+			<p>Brian's solution version quickly finds a few shortest playlists, but when it goes on to find an a-&gt;z playlist that's as close to 30 minutes as possible, it ... well, it's been over 3 hours and it still hasn't finished, though it occasionally spits out progress which looks like it found a new playlist that is a slightly better match than the last.</p>
+			<p>Brian's code looks quite nice, however. Brian genericized his solution to allow for any type of minimization, using his BasicMatchEvaluator class. While the code is not documented, it would appear that his PlaytimeEvaluator subclass uses the square of the difference between the desired time and the actual playlist to determine fitness. But if that's all it did, it would require finding every solution - as it is, the #continue? method looks to be designed to provide a customizable way to determine early on if a path is a 'dead end'.</p>
+			<p>Ilmari's solution is fast! I don't have the expertise to analyze his implementation of "Dijkstra's graph search algorithm with a block-customizable edge cost", but whatever it is, it works. Every solution took less than 1 second, usually under 1/2 a second.</p>
+			<p>One optimization that I had thought of, but that nobody implemented (as far as I could tell) was to find 'gaps'. For example, no song in the supplied playlist ended with a 'q', so all songs that started with 'q' could be removed. Similarly for songs beginning with 'x'.</p>
+			<p class="example">================<br />Show the Result!<br />================</p>
+			<p>Finally, we get to the end - showing off the end result.  A few people (Gavin, Brian, Ilmari) took the messy milliseconds duration and made them into something more human readable. Ilmari's solution stands out in this department as particularly attractive:</p>
+			<p>Trying to find playlist from "Que Sera" to "Zaar"</p>
+			<p class="example">Found playlist:<br />Que Sera                         (3:47)  by Ace of Base<br />And Now Little Green Bag         (0:15)  by Steven Wright<br />Good Friends Are for Keeps       (1:08)  by The Carpenters<br />Santa Cruz                       (2:11)  by David Qualey<br />Zaar                             (4:53)  by Peter Gabriel</p>
+			<p class="example">=======<br />Summary<br />=======</p>
+			<p>As I noted, I spent far too much time working on petty details, and didn't get to personally spend as much time playing with algorithms and research as I would have liked. I'm quite pleased to see all the solutions everyone submitted, because they showcase various nice Ruby-isms and programming styles. (Blocks and procs, or custom classes, used to turn a specific algorithm into a nice generic solution that can use all sorts of criteria for what a good playlist is.)</p>
+			<p>I've focused on performance a lot during this summary. The point was certainly not to write the fastest solution possible; however, in playing with these sorts of <a href="http://en.wikipedia.org/wiki/NP-complete">NP-complete</a> problems (Some flavors of this quiz [such as "shortest playlist"] are not NP-complete, but I think other flavors ["playlist closest to 30 minutes"] are.) you sometimes HAVE to think about speed just to get a solution in a time that isn't measured in years.</p>
+			<p>I hope you all had fun playing with this very common, very difficult problem, even if it was disguised in sheep's clothing. :)</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/140692">Gavin Kistner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/140708">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/140749">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/140882">Ilmari Heikkinen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/140883">Brian Schr&ouml;der</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/141324">Pedro</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/141374">Brian Schr&ouml;der (2)</a></li>
+			</ol>
+			<p><a href="quiz30_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

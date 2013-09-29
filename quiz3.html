@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Geodesic Dome Faces (#3)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Geodesic Dome Faces (#3)</span>
+			<p>by Gavin Kistner</p>
+			<p><b>SUMMARY</b></p>
+			<p>Given the faces for a tetrahedron, octahedron, or isocahedron, create a geodesic dome of arbitrary frequency.</p>
+			<p>The (equilateral triangle) faces of each primitive are given as triplets of vertex points. Each vertex is itself a triplet of cartesian 3-space coordinates, all of unit-distance from 0,0,0. (See the supplied points at the end for an example.) The resulting geodesic should be an array of triangular faces; again each face is a triplet of points, and each point is unit-distance from 0,0,0.</p>
+			<p><b>DETAILS</b></p>
+			<p>A 'simple' solution (using recursion) exists to subdivide each primary face into 4^n sub-faces. Instead, the following (more flexible) algorithm should be used, which allows for n^2 sub-faces:</p>
+			<p>[See <a href="http://phrogz.net/CSS/Geodesics/index.html">http://phrogz.net/CSS/Geodesics/index.html</a> for a visual example of the following algorithm.]</p>
+			<p><i>Step 1)</i> Start with the three points defining a primary face.</p>
+			<p><i>Step 2)</i> Divide each side of the face into equal length pieces; the number of pieces is specified by the 'frequency'. (A frequency of 0 subdivides the face not at all, a frequency of 1 divides each side into two equal pieces, a frequency of 2 into three equal pieces, and so on.)</p>
+			<p><i>Step 3)</i> Connect each division point along two sides with a line that is parallel to the third side.</p>
+			<p><i>Step 4)</i> Repeat with lines parallel to all three sides.</p>
+			<p><i>Step 5)</i> New points are defined wherever the lines intersect.</p>
+			<p>The combination of the initial face points, the edge points, and the intersection of the connecting lines provide the points for the faces of the geodesic. (As diagrammed in <a href="http://phrogz.net/CSS/Geodesics/index.html#step5">http://phrogz.net/CSS/Geodesics/index.html#step5</a>, the 16 faces created by subdividing the primary face with frequency 3 can be described as Aqm, qfm, qrf, rgf, rsg, szg, sBz, mfn, fhn, fgh, gyh, gzy, nho, hxo, hyx, oxC. )</p>
+			<p>All points should be 'normalized', so that they are unit-distance from the origin.</p>
+			<p>For extra points, ensure that the points for each face are always specified in the same direction, clockwise or counter-clockwise when looking from the origin. (The above list of faces are all specified in a clockwise direction.)</p>
+			<p><b>STARTER DATA</b></p>
+			<p>The points for the three primitives follow. (Solving for any one of them solves for all of them.)</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    SQRT2 = Math.sqrt(2)<br />    SQRT3 = Math.sqrt(3)<br />    TETRA_Q = SQRT2 / 3<br />    TETRA_R = 1.0 / 3<br />    TETRA_S = SQRT2 / SQRT3<br />    TETRA_T = 2 * SQRT2 / 3<br />    GOLDEN_MEAN = (Math.sqrt(5)+1)/2<br /><br />    PRIMITIVES = {<br />        :tetrahedron =&gt; {<br />            :points =&gt; {<br />                <span class="string">'a'</span> =&gt; Vector[ -TETRA_S, -TETRA_Q, -TETRA_R ],<br />                <span class="string">'b'</span> =&gt; Vector[  TETRA_S, -TETRA_Q, -TETRA_R ],<br />                <span class="string">'c'</span> =&gt; Vector[        0,  TETRA_T, -TETRA_R ],<br />                <span class="string">'d'</span> =&gt; Vector[        0,        0,        1 ]<br />            },<br />            :faces =&gt; <span class="string">%w| acb abd adc dbc |</span><br />        },<br />        :octahedron =&gt; {<br />            :points =&gt; {<br />                <span class="string">'a'</span> =&gt; Vector[  0,  0,  1 ],<br />                <span class="string">'b'</span> =&gt; Vector[  1,  0,  0 ],<br />                <span class="string">'c'</span> =&gt; Vector[  0, -1,  0 ],<br />                <span class="string">'d'</span> =&gt; Vector[ -1,  0,  0 ],<br />                <span class="string">'e'</span> =&gt; Vector[  0,  1,  0 ],<br />                <span class="string">'f'</span> =&gt; Vector[  0,  0, -1 ]<br />            },<br />            :faces =&gt; <span class="string">%w| cba dca eda bea<br />                          def ebf bcf cdf |</span><br />        },<br />        :icosahedron =&gt; {<br />            :points =&gt; {<br />                <span class="string">'a'</span> =&gt; Vector[  1,  GOLDEN_MEAN, 0 ],<br />                <span class="string">'b'</span> =&gt; Vector[  1, -GOLDEN_MEAN, 0 ],<br />                <span class="string">'c'</span> =&gt; Vector[ -1, -GOLDEN_MEAN, 0 ],<br />                <span class="string">'d'</span> =&gt; Vector[ -1,  GOLDEN_MEAN, 0 ],<br />                <span class="string">'e'</span> =&gt; Vector[  GOLDEN_MEAN, 0,  1 ],<br />                <span class="string">'f'</span> =&gt; Vector[ -GOLDEN_MEAN, 0,  1 ],<br />                <span class="string">'g'</span> =&gt; Vector[ -GOLDEN_MEAN, 0, -1 ],<br />                <span class="string">'h'</span> =&gt; Vector[  GOLDEN_MEAN, 0, -1 ],<br />                <span class="string">'i'</span> =&gt; Vector[ 0,  1,  GOLDEN_MEAN ],<br />                <span class="string">'j'</span> =&gt; Vector[ 0,  1, -GOLDEN_MEAN ],<br />                <span class="string">'k'</span> =&gt; Vector[ 0, -1, -GOLDEN_MEAN ],<br />                <span class="string">'l'</span> =&gt; Vector[ 0, -1,  GOLDEN_MEAN ]<br />            },<br />            :faces =&gt; <span class="string">%w| iea iad idf ifl ile<br />                          eha ajd dgf fcl lbe<br />                          ebh ahj djg fgc lcb<br />                          khb kjh kgj kcg kbc |</span><br />        }<br />    }<br /></div></div>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>by Gavin Kistner</p>
+			<p>There were three major challenges which comprised the meat of this quiz:</p>
+			<p><b>1) What the heck was I talking about?</b></p>
+			<p>Although finding the answer to #1 was not intended to be part of the quiz, it certainly was. Due to incomplete specification and background, one had to do a bit of searching to understand what a geodesic dome is, and how that related to the supplied information about primitives and faces.</p>
+			<p>A quick search on Wikipedia yields:</p>
+			<p><a href="http://en.wikipedia.org/wiki/Geodesic_dome">Geodesic Dome</a></p>
+			<p>I won't repeat the information on that page here, but the summary is:</p>
+			<p class="example">A geodesic dome is an approximation of a sphere, made out of triangles<br />connected by straight edges. To create a geodesic dome, start with a<br />platonic solid with triangular faces--tetrahedron, octahedron, or<br />icosahedron. Subdivide each triangular face into a number of smaller<br />triangles, and then push the points of those triangles out from the center<br />of the primitive to the radius of the sphere.</p>
+			<p>This brings us to challenge number 2:</p>
+			<p><b>2) How do you find the points on the face, and make triangles from them?</b></p>
+			<p>There are various techniques for determining the exact locations of the points for the sub triangles. (Several techniques are described in the white paper "<a href="http://www.salsburg.com/geod/geodesicmath.pdf">Geodesic Math</a>", starting on page 9. The one chosen for and described by this quiz is the Class 1, Method 1 technique (page 9), which creates small triangles with sides of equal length.</p>
+			<p>Each of the four solutions was unique.</p>
+			<p>Everyone used vectors to solve the problem, although Dennis worked extra hard and created his own Vector class rather than using the one included in the matrix library included with Ruby.</p>
+			<p>Dennis also went his own way and divided the sides of the triangles into equal-angles (as measured from the center of the geodesic), instead of equal-length pieces. This technique is slightly more effective at evenly distributing the triangles across the surface of the sphere. For example, compare an octahedron subdivided with frequency 20, using the linear technique (as outlined by the quiz) versus the angular technique Dennis used in <a href="http://phrogz.net/CSS/Geodesics/LinearVersusRadial.gif">this picture</a>. Note how the linear technique has the triangles piling up along the edges of the original face of the octahedron, where the radial technique does a better job of spacing them out.</p>
+			<p>I was the only one who used a recursive technique to hunt down all the triangles on the face, and was the only one to consider groups of faces as hexagons. The other three solutions all use cleaner methods of using one loop inside another and cleanly navigating the whole face, once.</p>
+			<p>Dennis and I both used a separate class for a face/triangle, while Warren and Martinus keep track of their information in a more 'raw' fashion.</p>
+			<p><b>3) How do you provide the results?</b></p>
+			<p>The solution by Martinus stands out, as he put the extra effort in to create a simple OpenGL viewer for his solution. While his solution wasn't quite correct (he forgot to normalize the points on the face, pushing them out away from the plane of the face to the surface of the sphere), it was a trivial change to fix it, <a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/116102">as Dennis pointed out</a>.</p>
+			<p>Further, Martinus' solution was the fastest (even with the additional code to normalize the points). In calculating the 20,808 faces for an octahedron of frequency 50, the times on my computer were:</p>
+			<p class="example">Martinus:  4.32 seconds<br />   Gavin:  8.61 seconds<br />  Warren:  12.81 seconds<br />  Dennis:  80.49 seconds</p>
+			<p>For reasons I couldn't figure out, Dennis' solution returns a bunch of NaN points when dealing with the icosahedron primitive. (Which is why I used octahedrons to test the output.) Also, I had to add</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    attr_reader :faces<br /><br /></div></div>
+			<p>to his Dome class; without that (or an #instance_eval call) there was no way to get at the data, once created :)</p>
+			<p>It was difficult to test Warren's output, as the results it provided were not organized into triplets of points. The call to flatten took Warren's array of point-triplet arrays and squashed it into a flat array of points. However, without the call to flatten, the points were stuck in arrays of faces for each original face in the primitive. I had this problem initially with my solution, which is why I created a separate Face class -- so that flattening the arrays of arrays of faces would not squash out the array of points contained within each face.</p>
+			<p>An alternative solution, and I think what Warren intended, is something like <a href="http://www.wobblini.net/ruby/flattenx.html">Array#flatten_once</a>, either through that separate library or by rolling ones' own #flatten_once method.</p>
+			<p>Despite the above 'problems', the quiz didn't specify what to do with the data in the end, or how to provide it. The solutions met the requirements correctly, if not conveniently :)</p>
+			<p><b>Wrap Up</b></p>
+			<p>When I proposed this quiz, I didn't realize how few people were conversant with the concepts of Geodesic domes (although I should have). I apologize for not being more clear with the specifications to the problem, particularly in the lack of background information.</p>
+			<p>I also did not see that the scope of the quizzes is intended to be as short as it is (30-60 minutes). Although this problem took some longer than I had expected, I *did* expect it to be a 2-3 hour problem. So, sorry for supplying a quiz which was perhaps more work than people have time for.</p>
+			<p>As penance, I give you some pretty pictures to end with: showing what the domes look like (using the linear interpolation defined by the quiz) for the three primitive types and with various frequencies. <a href="http://phrogz.net/CSS/Geodesics/VariousGeodesics_planar.png">The first picture</a> shows the faces clearly, <a href="http://phrogz.net/CSS/Geodesics/VariousGeodesics_smooth.png">the second</a> shows how well they approximate spheres when used in a rendering engine that can smooth the shading between the faces.</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/116044">Gavin Kistner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/116080">martinus</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/116106">Dennis Ranke</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/116525">Warren Brown</a></li>
+			</ol>
+			<p><a href="quiz3_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

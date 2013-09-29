@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Shirt Reader (#140)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Shirt Reader (#140)</span>
+			<p>Sun Microsystems handed out some fun shirts at the LSRC.  The graphic on the front looks something like:</p>
+			<p class="example">sun image<br /><br />star image + T + up arrow<br /><br />E + perfume bottle image + sea shells image</p>
+			<p>This is a clever advertisement for their "Sun Startup Essentials" program.</p>
+			<p>This week's Ruby Quiz is to write a program that can read such shirts.  At the basic level, we will assume the user will feed us the right words:</p>
+			<p class="example">$ ruby read_shirt.rb e scent shells<br />essentially</p>
+			<p>Hopefully your solution will be smarter than mine, which, as you can see, only gets close.  It may be better to give a few possible choices instead of just the best match.</p>
+			<p>Of course, the problem comes when you guess the wrong word.  My first thought was of a perfume bottle, as my description shows, but the correct word was scent.  For bonus points, see what you can do about this problem.  One idea might be to allow alternatives for a segment of the word.  Another might be to hit the thesaurus, which does list scent as a synonym for perfume.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This quiz is surprisingly challenging.  Our brain is capable of making some pretty complex associations between sounds to make sense of these puzzles quite quickly.  To code that up is a non-trivial task.</p>
+			<p>All of the solutions used some variant of the Metaphone algorithm to match words with similar sounds.  The solution from steve d is probably the most complete.  It pulls from a pronunciation dictionary, uses the afore mentioned Metaphone algorithm, refines matches using a Levenshtein edit distance algorithm, and even inlines some C for speed.  I do recommend everyone have a look at that code.</p>
+			<p>I'm going to go through one of Eugene Kalenkovich's solutions in this summary though.  It gets pretty good answers in the spot checking I did, it's performance isn't too bad, and it's a bit smaller than steve's code.  It starts by pulling in some external resources:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'rubygems'</span><br />    require <span class="string">'text'</span><br />    include Text::Metaphone<br />    include Text::Levenshtein<br />    load <span class="string">'expectations.rb'</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Most of this code is about loading the Text gem.  For those not familiar with it, Text includes a slew of algorithms useful in processing text.  This code will use the Metaphone and the improved Double Metaphone algorithms to compare words by sound.  It also uses the Levenshtein distance algorithm to see how far apart two possible words are.</p>
+			<p>The expectations.rb file just fills a global Hash with some test cases.</p>
+			<p>Another thing most of the solutions did was to perform some translation of the provided words to make them more likely to match sounds.  One particular problem point seemed to be "ee" sounds at the end of words, typically ending in y.  Performing some phonetic substitutions can increase the matching accuracy in these cases.  Here's Eugene's code for that:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    subs={<span class="string">'1'</span>=&gt;<span class="string">'wan'</span>,<span class="string">'2'</span>=&gt;<span class="string">'to'</span>,<span class="string">'3'</span>=&gt;<span class="string">'tre'</span>,<span class="string">'4'</span>=&gt;<span class="string">'for'</span>,<span class="string">'5'</span>=&gt;<span class="string">'five'</span>,<span class="string">'6'</span>=&gt;<span class="string">'six'</span>,<br />          <span class="string">'7'</span>=&gt;<span class="string">'seven'</span>,<span class="string">'8'</span>=&gt;<span class="string">'ate'</span>,<span class="string">'9'</span>=&gt;<span class="string">'nine'</span>,<span class="string">'10'</span>=&gt;<span class="string">'ten'</span>,<br />          <span class="string">'c'</span>=&gt;<span class="string">'see'</span>,<span class="string">'h'</span>=&gt;<span class="string">'eich'</span>,<span class="string">'j'</span>=&gt;<span class="string">'jey'</span>,<span class="string">'k'</span>=&gt;<span class="string">'key'</span>,<span class="string">'q'</span>=&gt;<span class="string">'que'</span>,<span class="string">'r'</span>=&gt;<span class="string">'ar'</span>}<br />    subsy={}<br />    <span class="string">%w[b c d g p t v z]</span>.each {|l| subsy[l]=l+<span class="string">'y'</span>}<br />    <span class="string">%w[b c d g p t v z]</span>.each {|l| subs[l]=l+<span class="string">'ee'</span>}<br />    <span class="string">%w[f l m n s x]</span>.each{|l| subs[l]=<span class="string">'e'</span>+l}<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Here we see Hashes constructed to provide the matching of numbers and improve the matching of certain letters.  Note that these are just used to match standalone chunks of the input.  Substitutions will not be made inside words.</p>
+			<p>Next we have some wrappers over the algorithms provided in the Text gem:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> metadist(str1,str2)<br />      2*distance(metaphone(str1),metaphone(str2))+<br />      distance(str1,str2)<br />    <span class="keyword">end</span><br /><br />    <span class="keyword">def</span> short_double_metaphone(word)<br />      m1,m2=double_metaphone(word)<br />      [m1[0,2],m2 ? m2[0,2] : <span class="keyword">nil</span>]<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The first method is an enhanced distance function for checking how similar two words are.  It works by applying the sound algorithm to each words then building and edit distance between those and adding that to the normal edit distance for the words.  The sound distance is weighted double in the overall result.</p>
+			<p>The second wrapper is for building a word index using a Double Metaphone algorithm.  It returns shortened versions of the provides sounds for use as Hash keys.  The code that builds that Hash is what we want to look at next:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    hash=Hash.new{|h,k|h[k]=[]}<br /><br />    File.open(<span class="string">"/usr/share/dict/words"</span>) {|f| f.readlines}.each <span class="keyword">do</span> |w|<br />      word=w.downcase.delete(<span class="string">"^a-z"</span>)<br />      m1,m2=short_double_metaphone(word)<br />      hash[m1]&lt;&lt;word<br />      hash[m2]&lt;&lt;word <span class="keyword">if</span> m2<br />    <span class="keyword">end</span><br />    <span class="global">$expectations</span>.values.each { |word|<br />      m1,m2=short_double_metaphone(word)<br />      hash[m1]&lt;&lt;word<br />      hash[m2]&lt;&lt;word <span class="keyword">if</span> m2<br />    }<br /><br />    hash.each_key{|k| hash[k].uniq!}<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This code just loops over the built-in dictionary (on Unix), building sound keys for each word and populating the Hash.  Note that the File loop can be simplified to File.foreach(...) { |w| ... }.</p>
+			<p>One point of interest here is that the code loops over test cases adding the solution words to the dictionary.  This raises a good point:  the quality of the dictionary will have a big impact on your results.  The built-in dictionary is convenient to test with, but you probably want to trade up to a better word list when quality really counts.</p>
+			<p>The input handling code is trivial:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    inputs=[]<br />    <span class="keyword">if</span> (ARGV.empty?)<br />      inputs=<span class="global">$expectations</span>.keys<br />    <span class="keyword">else</span><br />      inputs &lt;&lt; ARGV<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This just supports the quiz interface, or defaults to running the included test cases.</p>
+			<p>All we have left is the application code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    inputs.each { |rebus|<br />      y_ed=rebus[0..-2]&lt;&lt;(subsy[rebus[-1]] || rebus[-1])<br />      word=y_ed.map{|w| subs[w] || w }.join.downcase.gsub(<span class="string">/[^a-z0-9]/</span>,<span class="string">''</span>)<br />      m1,m2=short_double_metaphone(word)<br />      results=hash[m1]<br />      results+=hash[m2] <span class="keyword">if</span> m2 &amp;&amp; m2!=m1<br />      res=results.uniq.sort_by{|a| [metadist(word,a),a.length]}.first(5)<br />      print <span class="string">"'#{rebus.join(' ')}' =&gt; #{res[0]}"</span><br />      expected=<span class="global">$expectations</span>[rebus]<br />      print <span class="string">", expected '#{expected}' is at position #{res.index(expected)}"</span> \<br />        <span class="keyword">if</span> expected<br />      puts<br />    }<br /><br /></div></div>
+			<p>The process here isn't too hard to follow.  The inputs are combined into a list, with the last element undergoing the "ee" sound substitutions we discussed earlier.  After that, all elements go through the general letter and number substitutions and get combined into a word.</p>
+			<p>The sound Hash keys are pulled for the resulting word and used to lookup a result set of possible matches.  That result set is then ordered by the enhanced distance function and and pruned to the top five matches.</p>
+			<p>The rest of the code just handles the printing.</p>
+			<p>My thanks to all who managed to get surprisingly accurate results for a tough problem.  As always, you've taught me new tricks.</p>
+			<p>It's pretty likely that tomorrow's problem will center around probability...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/270426">steve d</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/270437">Raf Coremans</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/270448">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/270724">Eugene Kalenkovich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/270968">Eugene Kalenkovich (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271196">James Koppel</a></li>
+			</ol>
+			<p><a href="quiz140_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

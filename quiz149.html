@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Word Loop (#149)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Word Loop (#149)</span>
+			<p>Here's a fun little challenge from the Educational Computing Organization of Ontario.</p>
+			<p>Given a single word as input try to find a repeated letter inside of it such that you can loop the text around and reuse that letter.  For example:</p>
+			<p class="example">$ ruby word_loop.rb Mississippi<br /> i<br /> p<br /> p<br />Mis<br /> ss<br /> si</p>
+			<p>or:</p>
+			<p class="example">$ ruby word_loop.rb Markham<br />Ma<br />ar<br />hk</p>
+			<p>or:</p>
+			<p class="example">$ ruby word_loop.rb yummy<br />yu<br />mm</p>
+			<p>If a loop cannot be made, your code can just print an error message:</p>
+			<p class="example">$ ruby word_loop.rb Dana<br />No loop.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>There were two kinds of solvers this week:  hardcore programmers who love a good challenge and cheaters like me.  Both approaches are neat, but I want to focus on the under appreciated cheater this time.  Contrary to the best practices for gamblers, cheater is a wonderful label for a programmer to have.</p>
+			<p>Cheaters always find the system and make it work for them.  So what's the system this time?  Have another look at one of the quiz examples:</p>
+			<p class="example"> i<br /> p<br /> p<br />Mis<br /> ss<br /> si</p>
+			<p>Okay, the first priority is to find a possible loop.  We need a repeated letter with some letters between the two occurrences, obviously.  How many letters between though?  Well, the minimum loop is:</p>
+			<p class="example">*.<br />..</p>
+			<p>The next smallest loop is what we see in Mississippi:</p>
+			<p class="example">*.<br />..<br />..</p>
+			<p>That's three and five and we can already see that each size must add two more letters.  So, we need an odd number of letters and at least three of those.  Now we can find loops.</p>
+			<p>Once we see the loop, it becomes clear that the loop divides the word into pieces.  Let me call them out:</p>
+			<p class="example"> ^     &gt; = before the loop characters<br /> ^     * = the repeated letter<br /> ^     . = loop characters<br />&gt;*.    ^ = after the loop characters<br /> ..<br /> ..</p>
+			<p>Seeing these makes a cheater wonder, can I output each part naturally down the lines?  To do that, we would first need to spit out those after the loop characters, in reverse order.  That shouldn't be tough since we already know how to find a loop, but notice that each of those is also indented.  It turns out that they are just indented by the length of characters before the loop, so that's trivial to deal with.</p>
+			<p>Now we would need the get those before the loop characters in the output.  No problem there, it's a simple print statement.</p>
+			<p>The loop is the trickiest part.  First, we see that the repeated letter and the first loop character can be printed along with the before characters.  The rest of the characters have an indent, but it's the same thing we figured out earlier and we can deal with that.  Then outputting the remaining characters of the loop can be as simple as printing two columns:  one pulling letters off the back of the loop and the other pulling letters off the front.</p>
+			<p>Wow, cheaters work harder than you think, eh?  If we can do all of those pieces, we can print the word loop as we go.  The reason I like trying an approach like this is that each step is pretty simple and easy to understand.  We had to do a bit of thinking that the computer probably could have done for us, but then you have to be smart enough to tell the computer how to do the thinking.</p>
+			<p>Let's move the ideas into code at this point.  We will examine Ken Bloom's solution.  Ken is a cheater and a better one than I am at that!  I'll tell you what Ken taught me shortly, but for first let's see the code.  Brace yourself because I'm giving you the whole thing in one shot:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> loopword word<br />     matchinfo=<br />       word.match(<span class="string">/(.*?)(.)(.(?:..)+?)\2(.*)/</span>i)<br />     <span class="keyword">if</span> matchinfo<br />       _,before,letter,looplets,after=matchinfo.to_a<br />       pad=<span class="string">" "</span>*before.size<br />       after.reverse.split(<span class="string">//</span>).each{|l| puts pad+l}<br />       looplets=looplets.split(<span class="string">//</span>)<br />       puts before+letter+looplets.shift<br />       <span class="keyword">until</span> looplets.empty?<br />         puts pad+looplets.pop+looplets.shift<br />       <span class="keyword">end</span><br />     <span class="keyword">else</span><br />       puts <span class="string">"No loop."</span><br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Isn't it great to be a cheater?</p>
+			<p>Let's break it down.  Probably the hardest part to understand is the very first step.  Ken hits the word with a tricky Regexp to figure out if it has a loop in it.  That's right, you can count an odd number of at least three characters with a regular expression.  Let's examine the pieces:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="string">/ (.*?)        # characters before the loop, if any<br />      (.)          # the first appearance of our repeated character<br />      (.(?:..)+?)  # an odd number of at least three loop characters<br />      \2           # the repeat of our repeated character<br />      (.*)         # characters after the loop, if any<br />      /ix</span>          <span class="comment"># make the expression case insensitive</span><br /><br /></div></div>
+			<p>There are two good tricks in there.  First, matching at least three odd characters is shown to be just any character followed by one or more groups of two characters.  That's handy to remember.</p>
+			<p>The other trick is using a back-reference to catch the repeated character.  What I didn't know about this trick though was that Ruby's regular expression engine is smarter than I gave it credit for.  I knew this would match:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; <span class="string">"-i---i-"</span>[<span class="string">/(\w).+\1/</span>]<br />    =&gt; <span class="string">"i---i"</span><br /><br /></div></div>
+			<p>However, I didn't know the following would work if you made the expression case insensitive:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; <span class="string">"-I---i-"</span>[<span class="string">/(\w).+\1/</span>i]<br />    =&gt; <span class="string">"I---i"</span><br /><br /></div></div>
+			<p>I spent too much effort in my code to get a match to work on the word Markham when I could have just used the /i switch.  Thanks for the tip, Ken.</p>
+			<p>Once we have tried the expression, the if statement checks to see if we found a loop.  If we didn't the else clause can print our error message and we're done.</p>
+			<p>When we did find a match, Ken starts by pulling out each capture of the expression into easy to manage variables.  Here's my chance to teach Ken a new trick though.  See how he created an unused variable (_) to capture the match as a whole?  It's not really needed if you switch the method call on the MatchData object:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; md = <span class="string">"Mississippi"</span>.match(<span class="string">/(.*?)(.)(.(?:..)+?)\2(.*)/</span>i)<br />    =&gt; <span class="comment">#&lt;MatchData:0x58a188&gt;</span><br />    &gt;&gt; md.to_a<br />    =&gt; [<span class="string">"Mississippi"</span>, <span class="string">"M"</span>, <span class="string">"i"</span>, <span class="string">"ssiss"</span>, <span class="string">"ppi"</span>]<br />    &gt;&gt; md.captures<br />    =&gt; [<span class="string">"M"</span>, <span class="string">"i"</span>, <span class="string">"ssiss"</span>, <span class="string">"ppi"</span>]<br /><br /></div></div>
+			<p>Let's get back to the code.  Here it is again to save scrolling:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> loopword word<br />     matchinfo=<br />       word.match(<span class="string">/(.*?)(.)(.(?:..)+?)\2(.*)/</span>i)<br />     <span class="keyword">if</span> matchinfo<br />       _,before,letter,looplets,after=matchinfo.to_a<br />       pad=<span class="string">" "</span>*before.size<br />       after.reverse.split(<span class="string">//</span>).each{|l| puts pad+l}<br />       looplets=looplets.split(<span class="string">//</span>)<br />       puts before+letter+looplets.shift<br />       <span class="keyword">until</span> looplets.empty?<br />         puts pad+looplets.pop+looplets.shift<br />       <span class="keyword">end</span><br />     <span class="keyword">else</span><br />       puts <span class="string">"No loop."</span><br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The rest of the code prints the word as I described earlier.  First, a variable is set to that indent we will need in multiple places.  The next line reverse()s and split()s the after loop characters, printing each one with the indent.  After that, Ken breaks up the loop characters into an Array for easy removal at both ends.  The next line prints the before the loop characters, the repeat, and the first loop character.  Finally, the until loop handles the remaining loop character two at a time, one from each end.  That process prints the entire word and makes a complete solution.</p>
+			<p>The rest of Ken's code just called the method on a set of sample words:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    loopword <span class="string">"Mississippi"</span><br />    puts<br />    loopword <span class="string">"Markham"</span><br />    puts<br />    loopword <span class="string">"yummy"</span><br />    puts<br />    loopword <span class="string">"Dana"</span><br />    puts<br />    loopword <span class="string">"Organization"</span><br /><br /></div></div>
+			<p>The non-cheating solutions are also very interesting.  They decided that this problem wasn't hardcore enough for them and they could maximize the fun by trying to create multiple loops and reuse as many characters as possible.  It's great code that leads to insane output, so be sure to check those out as well.</p>
+			<p>My thanks to cheaters and hardcore solvers alike.  You always give me more interesting material than I can even talk about.</p>
+			<p>Tomorrow we will tackle a typical programming task in a completely non-typical manner...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282804">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282806">Joe</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282810">Thomas</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282811">Thomas (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282812">Ken Bloom</a></li>
+				<li><a href="http://groups.google.com/group/comp.lang.ruby/msg/d092f4fe6ae868bc">Pawel Radecki</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282814">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282818">Clark Grubb</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282819">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282890">Robert Horvick</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282893">Juraj Plavcan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/282937">Michal Suchanek</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283118">Alex Shulgin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/283187">Daniel Lindsley</a></li>
+			</ol>
+			<p><a href="quiz149_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

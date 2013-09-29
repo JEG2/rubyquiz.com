@@ -1,0 +1,89 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Euchre Hands (#55)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Euchre Hands (#55)</span>
+			<p>The card game of Euchre has an unusual ordering of cards in the hand.  This week's Ruby Quiz is to take a random Euchre hand and sort it.</p>
+			<p>The first thing you need to know is that Euchre is played with a small deck of cards.  Four suits are used Diamonds (d), Clubs (c), Spades (s), and Hearts (h), but each suit has only the cards Nine (9), Ten (T), Jack (J), Queen (Q), King (K), and Ace (A).  The cards are generally ordered as I just listed them, Nine being the low card and Ace the high card.  The exception is the "Bowers".</p>
+			<p>When a Euchre hand is started, the first task is to select a Trump suit.  How that's done is not important, just know that one suit is always different from the rest.  Trump is the best suit, valued higher than the other three suits (which are basically equal).  In the Trump suit, the card order changes.</p>
+			<p>The first oddity of Trump is that the Jack of the selected suit becomes the Right Bower, the highest ranked Trump card.  The second oddity is that the other Jack of the same color (Diamonds and Hearts are red while Clubs and Spades are black) becomes the Left Bower, the second highest Trump card.  This card is considered to be of the Trump suit for the rest of the hand.  For example, if Spades is selected as Trump, the order of Spades becomes (lowest to highest):  9s, Ts, Qs, Ks, As, Jc, and Js.  All other suits run Nine to Ace, save that Clubs will be short a Jack.</p>
+			<p>The three non-Trump suits are equal, but it is good interface to sort the by suit alternating red, black, red, and black, I think.  Especially with a GUI, this makes it easier to understand the hand.</p>
+			<p>Input (on STDIN) will be a line containing the Trump suit, followed by five lines containing a Euchre hand. For example:</p>
+			<p class="example">Diamonds<br />Kc<br />Jh<br />Kd<br />Td<br />Ah</p>
+			<p>Your script should output (to STDOUT) the Trump suit, followed by the cards in sorted order (highest card first):</p>
+			<p class="example">Diamonds<br />Jh<br />Kd<br />Td<br />Kc<br />Ah</p>
+			<p>Here's a script that will feed your program random hands:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/local/bin/ruby -w</span><br /><br />    <span class="comment"># build a Euchre deck</span><br />    cards = Array.new<br />    <span class="string">%w{9 T J Q K A}</span>.each <span class="keyword">do</span> |face|<br />      <span class="string">%w{d c s h}</span>.each <span class="keyword">do</span> |suit|<br />        cards &lt;&lt; face + suit<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># choose trump</span><br />    puts <span class="string">%w{Diamonds Clubs Spades Hearts}</span>[rand(4)]<br /><br />    <span class="comment"># deal a hand</span><br />    cards = cards.sort_by { rand }<br />    puts cards[0..4]<br /><br /></div></div>
+			<p>One last thought:  If accuracy is our ultimate goal here, how will you know your output is correct?</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>My wife can't stand how Euchre reorders the suits.  "Everyone know Jacks come after Tens," she would say.  Funny how most of us except the odd Ace concept where the low card is frequently the high card, or even both.  Once you start moving Jacks though, a lot of people have trouble following the game.</p>
+			<p>Of course, my wife would also say, "How can you call that Jack a Club (assuming Clubs are Trump), when it has Spades printed on it?"  She's got me there.</p>
+			<p>My wife's analysis of Euchre's card order is really right on:  It's unusual.  Because of that, the traditional sort() tool won't get you all the way to a solution.  That makes us think about other options.</p>
+			<p>Don't get me wrong, many solutions bent sort() to their will.  However, as I said in the quiz, I was looking as much at how to know the answer is correct as I was at just having an answer.  To me, the weighted sorts are hard to prove and no one did it to my satisfaction.  Given that, I want to look at the other major approach people hit on.</p>
+			<p>The following is the beginning of Bob Showalter's solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/local/bin/ruby -w</span><br /><br />    <span class="comment"># Euchre hand sorter</span><br /><br />    CARDS = <span class="string">%w(A K Q J T 9)</span><br />    suits = <span class="string">%w(Spades Hearts Clubs Diamonds)</span><br /><br />    <span class="comment"># read and check input data</span><br />    trump = gets.chomp<br />    raise <span class="string">"Invalid Trump Suit"</span> <span class="keyword">unless</span> suits.include? trump<br />    hand = []<br />    5.times <span class="keyword">do</span><br />      card = gets.chomp<br />      raise <span class="string">"Invalid card #{card}"</span> <span class="keyword">unless</span><br />        card.length == 2 &amp;&amp;<br />        CARDS.include?(card[0,1]) &amp;&amp;<br />        suits.find { |suit| suit[0,1].downcase == card[1,1] }<br />      raise <span class="string">"Duplicate card #{card}"</span> <span class="keyword">if</span> hand.include? card<br />      hand &lt;&lt; card<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Bob begins by defining the traditional card order, and the four suits.</p>
+			<p>The next chunk of code reads the trump suit and hand into variables.  This code is careful to ensure proper input.  Suits must be one of the known four and cards must be two characters, have a known face and suit, and not be duplicated.</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># rotate trump suit to front</span><br />    suits.push(suits.shift) <span class="keyword">while</span> suits.first != trump<br /><br />    <span class="comment"># if hand is void in second suit, swap second and fourth</span><br />    <span class="comment"># (this keeps output in alternating colors)</span><br />    <span class="keyword">unless</span> hand.find { |card| card[1,1] == suits[1][0,1].downcase }<br />      suits[1], suits[3] = suits[3], suits[1]<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This chunk of code does two things.  First, the suits are "rotated" until trump is the first suit.  Note that this is why "CARDS" was declared as a constant but "suits" is just a variable.  Good hints for the reader in this code.</p>
+			<p>The second thing the code does is the trick many hit on to defeat my extra red/black requirement.  If we have four suits ordered red, black, red, black (or black, red, black, red), the only edge case we can do anything about is when the player doesn't have the second suit.  Here's the mapping of possible orderings (assuming Spades is trump) to show what I mean:</p>
+			<p class="example">all four suits               (black, red, black, red ordering works fine)<br /><br />Spades, Hearts, and Clubs    (already correct)<br />Hearts, Clubs, and Diamonds  (already correct)<br />Spades, Hearts, and Diamonds (can't move trump to fix)<br />Spades, Clubs, and Diamonds  (the fixable case)<br /><br />just two suits               (moves won't change anything)<br />a single suit                (already correct)</p>
+			<p>In the fixable case, swapping the (missing) second and (present) fourth suits resolves the issue.  That's what you're seeing in the code above.</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># generate a sort order</span><br />    deck = []<br />    suits.each <span class="keyword">do</span> |suit|<br />      CARDS.each <span class="keyword">do</span> |card|<br />        deck &lt;&lt; card + suit[0,1].downcase<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Given that the correct suit order has been established, the entire Euchre deck is built, in traditional card order.</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># move bowers to front</span><br />    deck.insert(0, deck.delete_at(3))<br />    deck.insert(1, deck.delete_at(15))<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>With the full deck in proper suit order, the only thing that remains is to shift the bowers to the head of the pack.  Their location is assured, thus the use of magic numbers above, though index() is an alternative.</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># output sorted hand (n.b. Array#&amp; (intersection) seemed to work, but</span><br />    <span class="comment"># is the order guaranteed?)</span><br />    puts trump<br />    puts deck.select { |card| hand.include? card }<br /><br /></div></div>
+			<p>With the work out of the way, showing the results is trivial.  Print trump and then just walk the deck printing any card in the hand.</p>
+			<p>I think that solution is very straight-forward and easy to accept as correct, even without a large group of tests.  Let's look at one more variation of the same theme, by Dominik Bathon:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    order = {<br />        <span class="string">"Spades"</span>   =&gt; <span class="string">"JsJcAsKsQsTs9sAdKdQdJdTd9dAcKcQcTc9cAhKhQhJhTh9h"</span>,<br />        <span class="string">"Hearts"</span>   =&gt; <span class="string">"JhJdAhKhQhTh9hAsKsQsJsTs9sAdKdQdTd9dAcKcQcJcTc9c"</span>,<br />        <span class="string">"Clubs"</span>    =&gt; <span class="string">"JcJsAcKcQcTc9cAhKhQhJhTh9hAsKsQsTs9sAdKdQdJdTd9d"</span>,<br />        <span class="string">"Diamonds"</span> =&gt; <span class="string">"JdJhAdKdQdTd9dAcKcQcJcTc9cAhKhQhTh9hAsKsQsJsTs9s"</span><br />    }<br /><br />    trump = gets.strip<br />    cards = readlines.map { |l| l.strip }<br />    o = order[trump].dup<br />    <span class="comment"># do we have a card of the 2nd suit</span><br />    <span class="keyword">unless</span> cards.any? { |card| card[1] == o[15] }<br />        <span class="comment"># if not replace second suit by the last</span><br />        o[14, 12] = o[36, 12]<br />    <span class="keyword">end</span><br />    puts trump, cards.sort_by { |card| o.index(card) }<br /><br /></div></div>
+			<p>This is basically the same thing, with prebuilt decks.  The code here just selects which of the four possible decks to use base on the trump indication in the input.</p>
+			<p>Again we see the second and fourth suits swapped, if needed.  This time it is done with a simple String copy.</p>
+			<p>Finally, cards are sorted, by their position in the complete deck.</p>
+			<p>My thanks to all the card sharks who solved the quiz and even taught me alternate hand ordering schemes.</p>
+			<p>Tomorrow we're off to the Pinewood Derby, so everyone pick up a car kit sometime this evening...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166625">Robin Stocker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166630">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166631">Sam Gentle</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166634">Edward Faulkner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166635">Ryan Leavengood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166663">Robin Stocker (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166671">Dale Martenson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166703">Nathan Morse</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166709">Dominik Bathon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166712">Timothy Goddard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166714">Domink Bathon (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166715">Zed Lopez</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166733">Ryan Leavengood (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166741">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166742">David Balmain</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166744">Daniel Sheppard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166746">David Balmain (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166747">Adam Shelly (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166752">Warren Brown</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166862">Domink Bathon (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166866">Rube</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166877">Daniel Sheppard (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166880">Bob Showalter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166881">Daniel Sheppard (3)</a></li>
+			</ol>
+			<p><a href="quiz55_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

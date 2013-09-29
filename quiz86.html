@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Panagrams (#86)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Panagrams (#86)</span>
+			<p>by Darren Kirby</p>
+			<p>One thing that interests me are word puzzles and language oddities. One such example is the self-documenting panagram. If a panagram is a sentence that uses every letter in the alphabet, then a self-documenting panagram is a sentence that enumerates its own letter count. Simple enough, but what if we state that the letter count must be spelled ie: 'twenty-seven' instead of '27'.  Now we have a challenge.</p>
+			<p>A while back I wrote a script in Python that finds these sentences. Today I rewrote it in Ruby and it found me this sentence:</p>
+			<p class="example">Darren's ruby panagram program found this sentence which contains exactly <br />nine 'a's, two 'b's, five 'c's, four 'd's, thirty-five 'e's, nine 'f's, <br />three 'g's,  nine 'h's, sixteen 'i's, one 'j', one 'k', two 'l's, three 'm's, <br />twenty-seven 'n's, fourteen 'o's,  three 'p's, one 'q', fifteen 'r's, <br />thirty-four 's's, twenty-two 't's, six 'u's, six 'v's, seven 'w's, six 'x's, <br />seven 'y's, and one 'z'.</p>
+			<p>My script does have its problems, and I would love to see what kind of code the Ruby experts could come up with to find self-documenting panagrams.</p>
+			<p>There is a lot more info on self-documenting panagrams at this address:</p>
+			<p><a href="http://www.cs.indiana.edu/~tanaka/GEB/pangram.txt">Panagrams</a></p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>First, let me clear up the naming issue, since I missed it when created the quiz.  The actual term for sentences that contain all the letters of the alphabet is pangram (or Swallowsgram) as discussed in the linked article.  The quiz name is in error.</p>
+			<p>Now that we know what to call them, the question becomes how do we generate self documenting pangrams?  The linked article described a technique called "Robbinsoning," which is a simple process.  The idea is that you start with some random distribution of letter counts, build the sentence, adjust the counts to reflect the actual sentence counts, rebuild, adjust, etc.  You can zero in on a solution in this fashion and most of the submitted solutions used something along these lines.</p>
+			<p>I want to have a look at Danial Martin's code below, but before we get into that you need to know how Daniel's code tracks letter frequencies.  Here's Daniel's own description of the technique:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># I represented the letter frequencies of letters in a sentence</span><br />    <span class="comment"># as one huge bignum, such that if "freq" was a variable containing</span><br />    <span class="comment"># the number, then "freq &amp; 0xFF" would be the number of "a"s in the</span><br />    <span class="comment"># sentence, "(freq&gt;&gt;8) &amp; 0xFF" would be the number of "b"s, etc.</span><br />    <span class="comment">#</span><br />    <span class="comment"># This means that when I adjust a guess, changing the actual frequency</span><br />    <span class="comment"># is as simple as adding and subtracting from a single variable.</span><br /><br /></div></div>
+			<p>Now that we know what to expect, here's the first bit of solution code (reformatted slighty):</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> find_sentence(prefix, suffix, initial = {})<br />      letterre     = Regexp.new(<span class="string">'(?i:[a-z])'</span>);<br />      letters      = (<span class="string">'a'</span>..<span class="string">'z'</span>).to_a<br />      letterpower  = Hash.new {|h,k| h[k] = 1 &lt;&lt; ((k[0]-?a)*8)}<br />      lettershifts = letters.map {|x| ((x[0]-?a)*8)}<br />      basesentence = prefix + letters.map {|x|<br />        (x == <span class="string">'z'</span>? <span class="string">'and '</span> : <span class="string">''</span>) + <span class="string">"_ '#{x}'"</span><br />      }.join(<span class="string">', '</span>) + suffix<br />      basefreq = 0<br />      basesentence.scan(letterre) {|x| basefreq += letterpower[x.downcase]}<br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Obviously, we have a lot of setup work here.  Let's take it line by line, because there's a lot going on.  This method is invoked with a sentence prefix and suffix, and optionally the initial letter counts to try.  When invoked, the first line defines a letter Regexp that will match individual letters in upper or lower case.  The next line generates an Array of letters the code can iterate over.</p>
+			<p>The next two variables are helpers for working with the Bignum frequencies.  letterpower will give you the number needed to add one count for the keyed letter to the frequencies and letter shifts is the offset a given letter is shifted into the Bigum.  (Note that letterpower calculates its own shift, in the same way lettershifts does.)</p>
+			<p>The next three lines are easier to swallow.  First, the sentence is constructed using the prefix, placeholders for counts, the word "and" as needed, and the sentence suffix.  The next two lines then calculate the letter frequencies of this baseline using the Regexp to iterate over the letters and letterpower to adjust the count.</p>
+			<p>Let's tackle the next chunk of code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="comment"># enfreq holds the letter counts that spelling out that number adds to</span><br />      <span class="comment"># the sentence.</span><br />      <span class="comment"># E.g. enfreq[1] == letterpower['o'] + letterpower['n'] + letterpower['e']</span><br />      enfreq = Hash.new {|h,k|<br />        <span class="keyword">if</span> k &gt; 255 <span class="keyword">then</span><br />          h[k] = h[k &gt;&gt; 8]<br />        <span class="keyword">else</span><br />          h[k] = 0<br />          k.to_en.scan(letterre) {|x| h[k] += letterpower[x.downcase]}<br />          h[k] += letterpower[<span class="string">'s'</span>] <span class="keyword">if</span> k != 1<br />        <span class="keyword">end</span><br />        h[k]<br />      }<br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This Hash is a typical memoization idiom in Ruby.  Give the Hash the code to calculate values from keys which it will invoke on the first call, then all future calls use a simple Hash lookup.  The lookup is much faster of course, since it doesn't need to rerun the code to build it.</p>
+			<p>In this case, the code builds letter counts, to add to the overall frequency counts, for the English word equivalents to the passed number.  The else statement is where that happens.  The process is basically what we saw for counting the base sentence frequency before.  Note that the code accounts for the s needed, should the count be plural.</p>
+			<p>The to_en() call in this code is provided by Glenn Parker's solution to Ruby Quiz #25.  I've discussed that code multiple times now, so I left it out of this summary for brevity.</p>
+			<p>Time for a little more code (minus a not needed variable removed by me):</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      guessfreq = 0<br />      letters.each{|x|<br />        guessfreq += (initial[x]||0) * letterpower[x]<br />      }<br />      guessfreq  = basefreq <span class="keyword">if</span> guessfreq == 0<br />      actualfreq = 0<br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Here we have the last bit of all this setup work.  First, an initial guessfreq is built for the letters based on the passed Hash.  If no starting point was given, the sentence uses the basefreq calculated earlier.  Finally, a variable is allocated to hold the actualfreq of the generated sentence.</p>
+			<p>OK, grab a deep breath and let's finally tackle the actual guessing loop that zeros in on solutions (debugging code and comments removed by me):</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">until</span> guessfreq == actualfreq <span class="keyword">do</span><br />        <span class="keyword">if</span> actualfreq &gt; 0 <span class="keyword">then</span><br />          lettershifts.each{ |y|<br />            g = 0xFF &amp; (guessfreq &gt;&gt; y)<br />            a = 0xFF &amp; (actualfreq &gt;&gt; y)<br />            <span class="keyword">if</span> (g != a)<br />              d = (g-a).abs<br />              r1 = rand(d+1)<br />              r2 = rand(d+1)<br />              r1=r2 <span class="keyword">if</span> r1 &lt; r2<br />              r1=-r1 <span class="keyword">if</span> a&lt;g<br />              <span class="keyword">if</span> (r1 != 0) <span class="keyword">then</span><br />                guessfreq += r1 &lt;&lt; y<br />                actualfreq += enfreq[g+r1] - enfreq[g]<br />              <span class="keyword">end</span><br />            <span class="keyword">end</span><br />          }<br />        <span class="keyword">else</span><br />          actualfreq = basefreq<br />          lettershifts.each {|y|<br />            g = 0xFF &amp; (guessfreq &gt;&gt; y)<br />            actualfreq += enfreq[g]<br />          }<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This code cycles until our latest guess matches the actual count for the sentence.  On the first pass actualfreq will be zero, so the else clause is executed.  This sets actualfreq to the baseline and adds in our guess.  After that, each iteration should hit the if branch.</p>
+			<p>Each time through the if branch, every letter is compared for a distance from its guess value and its actual value.  A random number is selected (well two actually with the high one favored) and added to our guess.  Then the actual is updated to reflect the change.  The net effect is that they close in on each other until our guess matches reality.</p>
+			<p>When they match, the final sentence can be constructed:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      prefix + (<span class="string">'a'</span>..<span class="string">'z'</span>).map {|x|<br />        g = (guessfreq &gt;&gt; ((x[0]-?a)*8))%256<br />        (x == <span class="string">'z'</span>? <span class="string">'and '</span> : <span class="string">''</span>) + <span class="string">"#{g.to_en} '#{x}'"</span> +<br />        (g==1 ? <span class="string">''</span> : <span class="string">'s'</span>)}.join(<span class="string">', '</span>) + suffix<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>That works like the original sentence construction, but real numbers instead of actual placeholders this time.  That's returned as our final result.</p>
+			<p>Here's the code that starts the process, passing the initial prefix and suffix:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    puts find_sentence(<br />      <span class="string">"Daniel Martin's sallowsgram program produced a sentence with "</span>, <span class="string">"."</span><br />    )<br /><br /></div></div>
+			<p>Interestingly, it seems that some inputs never resolve to a solution.  I have not investigated this too deeply, but multiple quiz solvers reported the same issue.</p>
+			<p>My thanks to all the clever solvers who found all those pangrams so quickly.  I learned a lot from reading the solutions, including how to use NArray from Simon Kroeger (worth a look).</p>
+			<p>Tomorrow's quiz has us inventing time travel for Ruby, so the summary for that could show up at any moment now...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/200997">Mat Schaffer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201001">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201015">Tom Hollingsworth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201028">Daniel Martin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201174">Simon Kr&ouml;ger (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201425">Nasir Khan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201452">Sam Kong</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201548">John Baylor</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201585">James Quick</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/201630">Darren Kirby</a></li>
+			</ol>
+			<p><a href="quiz86_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

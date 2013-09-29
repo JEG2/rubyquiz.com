@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Index and Query (#54)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Index and Query (#54)</span>
+			<p>by Lyndon Samson</p>
+			<p>All this fiddling with bits in the thread "How to get non-unique elements from an array" got me digressing to search engines and indexing.</p>
+			<p>So if you have for example:</p>
+			<p class="example">Doc1=The quick brown fox<br /><br />Doc2=Jumped over the brown dog<br /><br />Doc3=Cut him to the quick</p>
+			<p>You can build a table with bit number and word.</p>
+			<p class="example">1 the<br />2 quick<br />3 brown<br />4 fox<br />5 jumped<br />6 over<br />7 dog<br />8 cut<br />9 him<br />10 to<br />11 quick</p>
+			<p>To create indices:</p>
+			<p class="example">Doc1=00000001111<br />Doc2=00001110101<br />Doc3=11110000011</p>
+			<p>You can very quickly return the Docs that contain 'the' [ Doc1,Doc2,Doc3 ], or brown [ Doc1,Doc2 ] etc.</p>
+			<p>This week's Ruby Quiz is to write a simple indexer/query system.</p>
+			<p>[ Note:</p>
+			<p>In the spirit of that thread, I think part of the quiz should be to solve the indexing problem in the shortest, most elegant, yet fastest way possible. Maybe that goes without saying, but I've seen some pretty long quiz solutions in the past.</p>
+			<p>--Ryan Leavengood ]</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This was a fun quiz for me because I really don't know anything about indexing documents.  I learned a ton just by reading the varied solutions.</p>
+			<p>Before we get into the bit magic, check out this simple Hash style solution by Dale Martenson:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> IndexHash<br />        <span class="keyword">def</span> initialize( documents=<span class="keyword">nil</span> )<br />            <span class="variable">@index</span> = Hash.new( [] )<br />            input( documents ) <span class="keyword">if</span> documents<br />        <span class="keyword">end</span><br /><br />        <span class="keyword">def</span> input( documents )<br />            documents.each_pair <span class="keyword">do</span> |symbol, contents|<br />                contents.split.each { |word| insert( symbol, word) }<br />            <span class="keyword">end</span><br />        <span class="keyword">end</span><br /><br />        <span class="keyword">def</span> insert( document_symbol, word )<br />            w = word.downcase<br />            <span class="keyword">unless</span> <span class="variable">@index</span>[w].include?( document_symbol )<br />              <span class="variable">@index</span>[w] += [ document_symbol ]<br />            <span class="keyword">end</span><br />        <span class="keyword">end</span><br /><br />        <span class="keyword">def</span> find( *strings )<br />            result = []<br />            strings.each <span class="keyword">do</span> |string|<br />                string.split.each <span class="keyword">do</span> |word|<br />                    result += <span class="variable">@index</span>[ word.downcase ]<br />                <span class="keyword">end</span><br />            <span class="keyword">end</span><br />            result.uniq<br />        <span class="keyword">end</span><br /><br />        <span class="keyword">def</span> words<br />            <span class="variable">@index</span>.keys.sort<br />        <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>We see in initialize() that the index is just a Hash.  The input() method is also easy to understand, as it just adds each word of a document to the Hash, as an Array of symbolic document names where the word can be found (see insert()).</p>
+			<p>The other side of the equation is find().  It takes an Array of Strings, dices those up into words, combs the index for each word, and adds all the connected document symbols to the result Array it returns.</p>
+			<p>David Balmain has done some timing of the submitted solutions:</p>
+			<p><a href="http://www.davebalmain.com/articles/2005/11/15/ruby-quiz-54-results">Benchmarks</a></p>
+			<p>This isn't the fastest solution for searches, but it still helped me understand what we are shooting for here.</p>
+			<p>Now let's take it a step further and look at Bob Showalter's bit solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/local/bin/ruby</span><br /><br />    <span class="comment"># document indexing/searching class</span><br />    <span class="keyword">class</span> Index<br /><br />      <span class="comment"># default index file name</span><br />      INDEX_FILE = <span class="string">'index.dat'</span><br /><br />      <span class="comment"># loads existing index file, if any</span><br />      <span class="keyword">def</span> initialize(index_file = INDEX_FILE)<br />        <span class="variable">@terms</span> = {}<br />        <span class="variable">@index</span> = {}<br />        <span class="variable">@index_file</span> = index_file<br />        <span class="keyword">if</span> File.exists? <span class="variable">@index_file</span><br />          <span class="variable">@terms</span>, <span class="variable">@index</span> = Marshal.load(<br />            File.open(<span class="variable">@index_file</span>, <span class="string">'rb'</span>) {|f| f.read})<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>We immediately see that this code has two Hashes, one for the terms and one for the index.  We can also see that Marshal is used to save and load these Hashes.</p>
+			<p>Now let's look at the methods that add to the index:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="comment"># sets the current document being indexed</span><br />      <span class="keyword">def</span> document=(name)<br />        <span class="variable">@document</span> = name<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># adds given term to the index under the current document</span><br />      <span class="keyword">def</span> &lt;&lt;(term)<br />        raise <span class="string">"No document defined"</span> <span class="keyword">unless</span> <span class="keyword">defined?</span> <span class="variable">@document</span><br />        <span class="keyword">unless</span> <span class="variable">@terms</span>.include? term<br />          <span class="variable">@terms</span>[term] = <span class="variable">@terms</span>.length<br />        <span class="keyword">end</span><br />        i = <span class="variable">@terms</span>[term]<br />        <span class="variable">@index</span>[<span class="variable">@document</span>] ||= 0<br />        <span class="variable">@index</span>[<span class="variable">@document</span>] |= 1 &lt;&lt; i<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The first method just sets the name of the document we are currently dealing with.  The second adds a single term to the index, under that document name.</p>
+			<p>The first step in adding a term is to place it in the terms Hash.  The key is the term and the value is the number of pairs already in the Hash (basically a numerical index).  Why didn't Bob just use an Array here?  Because it would slow down lookups.  You would have to walk the Array to find the term in question each time you needed to know its index.</p>
+			<p>Once you have an index for the new term, it's time to record it in the index Hash, under the current document name.  Each document name is given a single Integer for a value.  The bit at the term index is then just flipped on to indicate the presence of a term.  This will make for some big numbers, but remember that Ruby will automatically switch to Bignum as needed.</p>
+			<p>Now we need the tools to get the info back out:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="comment"># finds documents containing all of the specified terms.</span><br />      <span class="comment"># if a block is given, each document is supplied to the</span><br />      <span class="comment"># block, and nil is returned. Otherwise, an array of</span><br />      <span class="comment"># documents is returned.</span><br />      <span class="keyword">def</span> find(*terms)<br />        results = []<br />        <span class="variable">@index</span>.each <span class="keyword">do</span> |document, mask|<br />          <span class="keyword">if</span> terms.all? { |term| <span class="variable">@terms</span>[term] &amp;&amp; mask[<span class="variable">@terms</span>[term]] != 0 }<br />            block_given? ? <span class="keyword">yield</span>(document) : results &lt;&lt; document<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />        block_given? ? <span class="keyword">nil</span> : results<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># dumps the entire index, showing each term and the documents</span><br />      <span class="comment"># containing that term</span><br />      <span class="keyword">def</span> dump<br />        <span class="variable">@terms</span>.sort.each <span class="keyword">do</span> |term, value|<br />          puts <span class="string">"#{term}:"</span><br />          <span class="variable">@index</span>.sort.each <span class="keyword">do</span> |document, mask|<br />            puts <span class="string">"  #{document}"</span> <span class="keyword">if</span> mask[<span class="variable">@terms</span>[term]] != 0<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># saves the index data to disk</span><br />      <span class="keyword">def</span> save<br />        File.open(<span class="variable">@index_file</span>, <span class="string">'wb'</span>) <span class="keyword">do</span> |f|<br />          Marshal.dump([<span class="variable">@terms</span>, <span class="variable">@index</span>], f)<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Again, find() is our primary search method.  It walks the document listing, checking for any document containing all the terms.  (That's different from the first solution we looked at which found documents containing any terms.)  A term is found, simply by checking to see if a given bit is on.  Ruby makes this easy since the indexing method, [](), returns bits for Integers.  If you provided a block to find(), each document is passed when found.  Otherwise, find() collects and returns an Array of the documents.</p>
+			<p>Both dump() and save() are obvious and do exactly what the comments say they do.</p>
+			<p>Here's the last bit of code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br />    <span class="keyword">if</span> <span class="global">$0</span> == <span class="keyword">__FILE__</span><br />      idx = Index.new<br />      <span class="keyword">case</span> ARGV.shift<br />        <span class="keyword">when</span> <span class="string">'add'</span><br />          ARGV.each <span class="keyword">do</span> |fname|<br />            idx.document = fname<br />            IO.foreach(fname) <span class="keyword">do</span> |line|<br />              line.downcase.scan(<span class="string">/\w+/</span>) { |term| idx &lt;&lt; term }<br />            <span class="keyword">end</span><br />          <span class="keyword">end</span><br />          idx.save<br />        <span class="keyword">when</span> <span class="string">'find'</span><br />          idx.find(*ARGV.collect { |s| s.downcase }) <span class="keyword">do</span> |document|<br />            puts document<br />          <span class="keyword">end</span><br />        <span class="keyword">when</span> <span class="string">'dump'</span><br />          idx.dump<br />        <span class="keyword">else</span><br />          print <span class="string">&lt;&lt;-EOS<br />    Usage: #$0 add file [file...]       Adds files to index<br />           #$0 find term [term...]      Lists files containing all term(s)<br />           #$0 dump                     Dumps raw index data<br />          EOS</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>That's a clever interface in very little code.  It reads the first argument to see if you want to "add", "find", or "dump" (similar to svn, cvs, or gem).  The rest of the arguments are the files to "add" or the terms to "find".</p>
+			<p>The other interesting element at David Balmain's result comparison page, is the chart of capabilities.  Think about how you might support queries like "Apple AND NOT fruit".  See David's Simple Ferret solution for a start on this kind of logic.</p>
+			<p>Then think about how you might add the ability to search for phrases instead of terms, like "Ruby Programming Language".  This problem space is vast and interesting to explore, I think.</p>
+			<p>My thanks to everyone who worked the quiz and to David Balmain for results that helped me know what to even look at.</p>
+			<p>Tomorrow we will explore James's favorite "trick taking game"...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165690">Bob Showalter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165768">Dale Martenson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165773">aurelianito</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165777">Interfecus</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165780">Bob Showalter (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165804">David Balmain</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165828">Daniel Sheppard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165830">horndude77</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165852">Kashia Buch</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165870">Scott Bauer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/165924">Dale Martenson (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166121">Bob Showalter (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/166236">Zed Lopez</a></li>
+			</ol>
+			<p><a href="quiz54_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

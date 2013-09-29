@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Studying Blackjack (#151)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Studying Blackjack (#151)</span>
+			<p>The majority of the strategy in Blackjack hinges around the dealer's hand.  The reasons are likely obvious to most of you:  that's the hand you have to beat and the dealer plays by fixed rules we can predict.</p>
+			<p>For those unfamiliar with Blackjack, you only need to know a tiny bit about the game for the purposes of this exercise.  The goal for both the player and the dealer is to draw cards to make a hand with the highest total possible, without going over 21.  Going over 21 is called "busting" and it means you lose the hand.  Face cards count for ten, aces are one or eleven (whichever is better for the hand), and all other cards count for their face value.  You start with two cards and, if they happen to be a ten valued card and an ace (a count of 21), the hand is called a "natural."  A natural is an automatic win in most cases.</p>
+			<p>The dealer begins with one of his two cards face up and one face down.  We call the former the "upcard."  The dealer will "hit" or take more cards until he reaches a count of 17 or higher.  After that he will "stand" or leave the hand where it is.  That tells us that there are only seven possible outcomes for the dealer:  get dealt a natural, bust, or hit to a total of 17, 18, 19, 20, or 21.</p>
+			<p>We start every hand knowing half of what the dealer holds thanks to the upcard.  Believe it or not, you can make pretty reliable guesses about how the hand will go with just that knowledge.</p>
+			<p>Write a Ruby program that shows the percent chance of a dealer reaching each possible outcome based on the upcard showing.</p>
+			<p>I'll give you some hints to verify your results.  Basic Blackjack strategy teaches that we should assume the dealer "has a ten in the hole" (as the face down card).  It's not always true, of course, but 17 is a common outcome for a dealer with an upcard of seven.  Finally, we call five and six "the dealer's bust cards" for reasons that will become obvious if you are outputting correct percentages.</p>
+			<p>In the casinos Blackjack is often played with more than one deck shuffled together.  One, two, six, and eight deck games are common.  You may want to offer the option to adjust the deck size your program uses.  Either way, let's default to two decks as an average of what a player will face.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>The solutions took two totally different approaches this week.  Some exhaustively searched the possible hands a dealer can have.  The search space isn't too big in this case so that's a viable approach that gives exact results.</p>
+			<p>Others chose to solve the problem with a simulation.  This approach is very simple:  deal a ton of hands, play them out by the dealer rules, and keep track of the results.  If you simulate enough hands, this approach should zero in on the actual numbers.</p>
+			<p>Let's see if the two approaches agree.  Here are the expected results from Eric I.'s exhaustive search:</p>
+			<p class="example">upcard       bust       17       18       19       20       21  natural<br />------    -------  -------  -------  -------  -------  -------  -------<br />     2 |   35.33%   13.94%   13.33%   13.07%   12.40%   11.93%    0.00%<br />     3 |   37.48%   13.28%   13.07%   12.46%   12.18%   11.54%    0.00%<br />     4 |   39.85%   13.07%   12.02%   12.10%   11.64%   11.31%    0.00%<br />     5 |   42.25%   12.10%   12.28%   11.73%   10.90%   10.73%    0.00%<br />     6 |   42.21%   16.62%   10.62%   10.67%   10.12%    9.75%    0.00%<br />     7 |   26.11%   37.05%   13.82%    7.80%    7.88%    7.34%    0.00%<br />     8 |   24.16%   12.97%   36.12%   12.90%    6.89%    6.96%    0.00%<br />     9 |   23.09%   12.09%   11.20%   35.41%   12.11%    6.10%    0.00%<br />    10 |   21.32%   11.29%   11.22%   11.30%   33.56%    3.55%    7.77%<br />   ace |   11.59%   12.85%   13.09%   13.02%   13.12%    5.28%   31.07%</p>
+			<p>Now here are the same results from Chris Lowis's simulation code (with the number of games increased to 100,000):</p>
+			<p class="example">Upcard  Bust    17      18      19      20      21      Natural<br />c2      35.02%  14.06%  13.36%  13.12%  12.53%  11.90%   0.00%<br />c3      37.24%  13.47%  12.94%  12.67%  12.27%  11.42%   0.00%<br />c4      39.29%  13.25%  12.58%  12.16%  11.59%  11.13%   0.00%<br />c5      41.78%  12.29%  12.24%  11.78%  11.20%  10.71%   0.00%<br />c6      42.05%  16.36%  10.75%  10.69%  10.14%  10.02%   0.00%<br />c7      25.97%  37.00%  13.89%   7.83%   7.75%   7.57%   0.00%<br />c8      24.52%  12.75%  35.93%  12.75%   6.94%   7.10%   0.00%<br />c9      22.86%  12.00%  11.97%  35.02%  12.08%   6.07%   0.00%<br />ct      21.43%  11.04%  11.11%  11.05%  34.37%   3.36%   7.63%<br />cj      21.39%  11.11%  11.15%  11.17%  34.07%   3.44%   7.67%<br />cq      21.16%  10.97%  11.30%  11.13%  34.19%   3.47%   7.79%<br />ck      21.23%  11.27%  11.13%  11.24%  34.07%   3.49%   7.58%<br />ca      13.13%  12.88%  12.86%  12.71%  12.71%   4.95%  30.77%</p>
+			<p>As you can see, they are very close to each other.</p>
+			<p>There are advantages to both approaches and I had a hard time picking what to talk about in this summary.  If accuracy is your biggest concern, you're probably better off sticking with the exhaustive search.  However, simulation gets very close results, is probably a little easier to code up, and would be an option even if the search space was much larger (though the results may be less accurate for that).</p>
+			<p>Given that, I'm going to show a simulation solution here.  If you are more interested in the exhaustive search, Eric I.'s code is well commented and easy to read.</p>
+			<p>The solution I want to look at below is Sander Land's first submission.  It's not perfect and I'll try to point out the problems as they come up, but the code is a very straight-forward simulation with a few good tricks in it.  I think that makes it worth a read through.</p>
+			<p>Sander's solution is written for Ruby 1.9, so it doesn't run without modification on earlier versions.  I'll point out the new features as we go and that will give us a chance to see how some of the new stuff gets used.</p>
+			<p>Here's the start of the code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="keyword">def</span> score<br />        sort.inject(0){|s,c| s+c &gt; 21 &amp;&amp; c==11 ? s+1 : s+c }<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This is Sander's code for valuing Blackjack hands.  Sander's notion of a hand is simply an Array of 2 through 11 Integers.  Blackjack isn't affected by suits, so this code doesn't bother to track them.</p>
+			<p>This code counts drops an ace an to 1 if counting it as 11 would bust the hand.  Note that the hand is first sorted to push aces to the end and make sure they are counted last.  Everything else gets the normal card value added on to a running total.</p>
+			<p>While, this code gets very close, it doesn't work in all cases.  Consider a hand containing a ten, an ace, and another ace.  The code will count the ten, add eleven to it, because it wouldn't bust the hand, then add one more.  This gives a final total of twenty two, instead of the correct count of twelve.  At least three solutions made the same error.</p>
+			<p>One way to fix the code is:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="keyword">def</span> score<br />        sort.each_with_index.inject(0){|s,(c,i)|<br />          s+c &gt; 21 - (size - (i + 1)) &amp;&amp; c==11 ? s+1 : s+c<br />        }<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This does the same thing, but reduces the hand limit for each card we have left to count once we reach the aces.  They are sorted to the end so we know we only have aces left and we could choose to count them as one each.  Note that I used a 1.9 feature here of calling each_with_index() without a block to get an Enumerator object.  That allows me to inject() over the values with their index.</p>
+			<p>Here's the next bit of Sander's code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">unless</span> ARGV[0]<br />     (2..11).each{|n| puts <span class="string">`ruby1.9 #{__FILE__} #{n}`</span>}<br />     exit<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>I thought this was a great trick.  As you are about to see, the rest of the code is written such that it only worries about a single upcard.  That simplified the code, but it doesn't let us see all of the results at once.  To fix that, Sander just calls his own program once for each upcard, when one isn't provided.  It's a recursive process call, so to speak.</p>
+			<p>The downside here is that this code didn't run for me as written.  I call my ruby 1.9 install ruby_dev, so the hardcoded name bit me.  A more portable way to get the name would be:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">unless</span> ARGV[0]<br />     require <span class="string">"rbconfig"</span><br />     (2..11).each{|n|<br />       puts <span class="string">`#{Config::CONFIG["ruby_install_name"]} #{__FILE__} #{n}`</span><br />     }<br />     exit<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Let's more on.  Here's the code that reads the upcard and number of decks to use:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    puts <span class="string">"upcard: #{upcard = ARGV[0].to_i}"</span><br />    NDECKS = (ARGV[1]||2).to_i<br />    CARDS = (((2..11).to_a+[10]*3)*4*NDECKS).tap{|c|<br />              c.delete_at c.index(upcard)<br />            }<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>We know we have an upcard if we made it this far, since the code before calls us with one when the user doesn't pass one in.  That makes it safe to read in at this point.  The number of decks is also read if available, or the default of two is assigned when it's not.</p>
+			<p>The last bit of this code builds a full deck.  It does that by generating the values 2 through 11, adding on three additional 10 values for the face cards, multiplying the whole set by 4 for the suits, and multiplying that standard deck by the count of decks we want to play with.</p>
+			<p>This gives us the number of requested full decks, but we need to remove the already used upcard.  That's what the tap() call does and it's new in Ruby 1.9.  delete_at() returns the element deleted, but we need the resulting deck back instead, to store it for future use.  That's what tap() is for.  You can tap() into a chain of calls to run some code, but you still get the object itself back as the result of the tap() call.</p>
+			<p>We're now ready to run the simulation:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    score_count = [0]*27<br />    cards = []<br />    N=(ARGV[2]||100_000).to_i<br />    N.times{<br />     cards = CARDS.dup.shuffle <span class="keyword">if</span> cards.size &lt; 17<br />     dealer = [upcard]<br />     dealer &lt;&lt; cards.pop <span class="keyword">while</span> dealer.score &lt; 17<br />     score_count[dealer.score] += 1<br />    }<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Believe it or not, that's the entire simulation code.</p>
+			<p>It begins by creating an Array to hold the tally of scores, indexed by hand total.  It's interesting to look at the size of this Array, initialized to twenty seven 0's.  That makes the highest Array index twenty six, which is the largest hand a dealer will ever bust with.  That is, they can draw a face card when hitting a sixteen (a ace would count as one in this case).  Indices zero through sixteen won't be touched, since a dealer won't stop on these totals.</p>
+			<p>The rest of this code creates an Array to hold the cards left, and decides how many rounds to run the simulation for based on user input or a default.  The simulation loop then starts, doing just four things:  deal and shuffle() (added in Ruby 1.9) a fresh deck if we may not have enough cards to deal another hand (seventeen aces at minimum), initialize a hand with the upcard, deal additional cards until we crest a total of seventeen, and record the final hand total.</p>
+			<p>The good point about this code is that it reuses the deck for as long as it can.  This simulation gets fairly accurate results by trying many possible hands with each trip through the deck.</p>
+			<p>One downside is that it doesn't distinguish between a total of twenty one and a natural.  You could fix this by dedicating some slot in the score Array for that (or switching to a score Hash of Hash.new(0)) and adding a check for this special hand after the hitting code.</p>
+			<p>With the results tallied, printing is all that remains:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    puts <span class="string">%w[17 18 19 20 21 bust]</span>.join(<span class="string">'     '</span>)<br />    puts (score_count[17..21] &lt;&lt; score_count[22..-1].inject(:+)).<br />         map{|x| <span class="string">'%-4.1f%%  '</span> % (100.0*x / N )}.join<br /><br /></div></div>
+			<p>The only real point of interest in this code is another 1.9 idiom.  inject() has be enhanced so that it can now take a Symbol argument for the method to call in the block.  That greatly simplifies the common summing case, as we see here.</p>
+			<p>Again the other solutions and approaches to this problem were all interesting.  Do take the time to look through them.</p>
+			<p>My thanks to all the card players that decided to ante up for this quiz.</p>
+			<p>Tomorrow we will continue the Blackjack theme..</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286334">Dennis Hennessy</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286337">Chris Lowis</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286343">Thomas</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286344">Sander Land</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286349">Eric I.</a></li>
+				<li><a href="http://groups.google.com/group/comp.lang.ruby/msg/d6649d767dc26f28">Pawel Radecki</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286397">Dennis Hennessy (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286410">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286466">Eric I. (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286711">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/286883">Sander Land (2)</a></li>
+			</ol>
+			<p><a href="quiz151_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

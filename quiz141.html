@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Probable Iterations (#141)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Probable Iterations (#141)</span>
+			<p>by Kenneth Kin Lum</p>
+			<p>You just did some probability calculations, and don't know if the answers are correct.  So you write a program to verify the results.  If you have eight dice, and throw them all at once, what is the probability that there are AT LEAST three fives?  Try to write a program that find out the "number of desirable outcomes" / "number of possible outcomes" by iterating through all the possible outcomes of the dice throw.
+ 
+It has a verbose mode to see that the program is running correctly (for the case 2 dice, at least 1 five):</p>
+			<p class="example">C:\rails\depot&gt;ruby dice.rb -v 2 1<br />         1   [1,1]<br />         2   [2,1]<br />         3   [3,1]<br />         4   [4,1]<br />         5   [5,1]  &lt;==<br />         6   [6,1]<br />         7   [1,2] <br />         8   [2,2]<br />         9   [3,2]<br />        10   [4,2]<br />        11   [5,2]  &lt;==<br />        12   [6,2]<br />        13   [1,3]<br />        14   [2,3]<br />        15   [3,3]<br />        16   [4,3]<br />        17   [5,3]  &lt;== <br />        18   [6,3]<br />        19   [1,4]<br />        20   [2,4]<br />        21   [3,4]<br />        22   [4,4]<br />        23   [5,4]  &lt;==<br />        24   [6,4]<br />        25   [1,5]  &lt;==<br />        26   [2,5]  &lt;== <br />        27   [3,5]  &lt;==<br />        28   [4,5]  &lt;==<br />        29   [5,5]  &lt;==<br />        30   [6,5]  &lt;==<br />        31   [1,6]<br />        32   [2,6]<br />        33   [3,6]<br />        34   [4,6]<br />        35   [5,6]  &lt;== <br />        36   [6,6]<br /><br />Number of desirable outcomes is 11<br />Number of possible outcomes is 36<br /><br />Probability is 0.3055555555555556</p>
+			<p class="example">C:\rails\depot&gt;ruby dice.rb 8 3<br /><br />Number of desirable outcomes is 226491<br />Number of possible outcomes is 1679616<br /><br />Probability is 0.1348468935756745</p>
+			<p>It also has a "sample mode" to print out the samples every 50,000 times in the loop:</p>
+			<p class="example">C:\rails\depot&gt;ruby dice.rb -s 8 3<br />         1   [1,1,1,1,1,1,1,1]<br />     50001   [3,6,3,4,3,1,2,1]<br />    100001   [5,5,6,1,6,1,3,1]<br />    150001   [1,5,3,5,2,2,4,1]<br />    200001   [3,4,6,2,5,2,5,1] <br />    250001   [5,3,3,6,1,3,6,1]<br />    300001   [1,3,6,3,4,3,1,2]<br />    350001   [3,2,3,1,1,4,2,2]<br />    400001   [5,1,6,4,3,4,3,2]<br />    450001   [1,1,3,2,6,4,4,2]<br />    500001   [3,6,5,5,2,5,5,2]  &lt;==<br />    550001   [5,5,2,3,5,5,6,2]  &lt;== <br />    600001   [1,5,5,6,1,6,1,3]<br />    650001   [3,4,2,4,4,6,2,3]<br />    700001   [5,3,5,1,1,1,4,3]<br />    750001   [1,3,2,5,3,1,5,3]<br />    800001   [3,2,5,2,6,1,6,3]<br />    850001   [5,1,2,6,2,2,1,4]<br />    900001   [1,1,5,3,5,2,2,4] <br />    950001   [3,6,1,1,2,3,3,4]<br />   1000001   [5,5,4,4,4,3,4,4]<br />   1050001   [1,5,1,2,1,4,5,4]<br />   1100001   [3,4,4,5,3,4,6,4]<br />   1150001   [5,3,1,3,6,4,1,5]<br />   1200001   [1,3,4,6,2,5,2,5]<br />   1250001   [3,2,1,4,5,5,3,5]  &lt;== <br />   1300001   [5,1,4,1,2,6,4,5]<br />   1350001   [1,1,1,5,4,6,5,5]  &lt;==<br />   1400001   [3,6,3,2,1,1,1,6]<br />   1450001   [5,5,6,5,3,1,2,6]  &lt;==<br />   1500001   [1,5,3,3,6,1,3,6]<br />   1550001   [3,4,6,6,2,2,4,6]<br />   1600001   [5,3,3,4,5,2,5,6]  &lt;==<br />   1650001   [1,3,6,1,2,3,6,6]<br /><br />Number of desirable outcomes is 226491<br />Number of possible outcomes is 1679616<br /><br />Probability is 0.1348468935756745</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>As a couple of solvers noted, this is an easy problem that's really just about counting.  In fact, you can solve the entire problem without ever rolling a die.</p>
+			<p>The trick is really in how you think about the problem.  Basically we want to enumerate all of the possible rolls from:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    [1, 1, 1, 1, 1, 1]<br /><br /></div></div>
+			<p>to:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    [6, 6, 6, 6, 6, 6]<br /><br /></div></div>
+			<p>Let me show you that one more time though, minus some Ruby syntax characters:</p>
+			<p class="example">111111 to 666666</p>
+			<p>Now it starts to look like counting, right?  It almost is.  If we counted straight between those two numbers though, we would pick up some digits that aren't on our dice.  But if we drop the digits on both sides by one:</p>
+			<p class="example">000000 to 555555</p>
+			<p>Now that is counting, in base six, and it's just a quick transliteration to adjust the digits up.  We're going to look at a solution that does just that.</p>
+			<p>While I put the code together that I'm going to show you, it's heavily inspired from many of the submissions I liked.  Let's just say that this week's showcased solution belongs to everyone.</p>
+			<p>Here's the argument processing code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -wKU</span><br /><br />    MODE = <span class="keyword">if</span> ARGV.first =~ <span class="string">/-([sv])/</span><br />      ARGV.shift<br />      <span class="global">$1</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">unless</span> ARGV.size == 2<br />      abort <span class="string">"Usage: #{File.basename($PROGRAM_NAME)} [-s|-v] NUM_DICE MIN_FIVES"</span><br />    <span class="keyword">end</span><br />    NUM_DICE, MIN_FIVES = ARGV.map { |n| Integer(n) }<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This code should be pretty easy to break down.  We check to see if the first argument looks like a switch and store it in the MODE constant when it does.  Note that the code doesn't provide an else branch for this check, but Ruby will default the constant to nil for us when the if condition fails to match.</p>
+			<p>The next bit of code just ensures that we have the two required arguments, converts them or throws an error if they are not what we expected, and stores them in constants for future use.</p>
+			<p>We're now ready for the counting code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    desirable_outcomes = 0<br />    POSSIBLE_OUTCOMES  = 6 ** NUM_DICE<br /><br />    POSSIBLE_OUTCOMES.times <span class="keyword">do</span> |i|<br />      outcome = i.to_s(6).rjust(NUM_DICE, <span class="string">"0"</span>)<br />      <span class="keyword">if</span> desirable = outcome.count(<span class="string">"4"</span>) &gt;= MIN_FIVES<br />        desirable_outcomes += 1<br />      <span class="keyword">end</span><br />      <span class="keyword">if</span> MODE == <span class="string">"v"</span> <span class="keyword">or</span> (MODE == <span class="string">"s"</span> <span class="keyword">and</span> (i % 50_000).zero?)<br />        puts <span class="string">"%#{NUM_DICE}d [%s]#{' &lt;==' if desirable}"</span> %<br />             [i + 1, outcome.tr(<span class="string">"0-5"</span>, <span class="string">"1-6"</span>).gsub(<span class="string">/(\d)(\d)/</span>, <span class="string">'\1,\2'</span>)]<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This is the heart of the code and, as you can see, still quite simple.  We begin by defining the range we will iterate over, from zero to the maximum count on the requested number of dice.</p>
+			<p>The times() iterator does the actual count.  Remember that we really want these numbers in base six.  The first line of the iterator does the conversion, padding with zeros to ensure we have the right number of "dice."</p>
+			<p>The first if branch is our test for the minimum number of fives.  When found, we bump a global counter that can later be used to generate results.</p>
+			<p>The final if statement handles printing for either of the inspection modes.  If we're in verbose mode, or sample mode and on a 50,000th iteration, the code prints the result index, the dice values, and an indicator arrow for rolls that were flagged as desirable.  This is where you see the code to bump all of the digits so they will match pips on a die.</p>
+			<p>The final bit of code, just prints the results:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    puts <span class="keyword">if</span> MODE<br />    puts <span class="string">"Number of desirable outcomes is #{desirable_outcomes}"</span><br />    puts <span class="string">"Number of possible outcomes is #{POSSIBLE_OUTCOMES}"</span><br />    puts<br />    puts <span class="string">"Probability is #{desirable_outcomes / POSSIBLE_OUTCOMES.to_f}"</span><br /><br /></div></div>
+			<p>This is as easy as it gets.  We show the desirable, the possible, and calculate the odds from the two of them.  The first line just sneaks in a line of padding between any sampling and the end results.</p>
+			<p>Again, this code combined things I liked from many of the solutions, so they are definitely worth a look.  Especially don't miss Alex LeDonne's second solution which uses some math to skip counting at all, when it can get away with it.</p>
+			<p>As always, my thanks to all who took the time to solve this quiz.  I feel like we always get creative results for the simple problems.</p>
+			<p>Tomorrow we will tackle one of the all time famous tough problems, and see if we just can't solve it reasonably well with minimal knowledge of the domain...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271801">Jes&uacute;s Gabriel y Gal&aacute;n</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271807">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271814">Ilmari Heikkinen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271815">Raf Coremans</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271844">Stephen Kyle</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271846">Eugene Kalenkovich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271879">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271940">L&aacute;zl&oacute; Heiszmann</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271953">come</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/271986">Cyrus Farajpour</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/272014">MenTaLguY</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/272091">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/272127">Eric DUMINIL</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/272238">Alex LeDonne</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/272374">Yossef Mendelssohn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/272422">Urs Meyer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/272495">Eugene Kalenkovich (2)</a></li>
+			</ol>
+			<p><a href="quiz141_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

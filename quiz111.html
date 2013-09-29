@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Counting Toothpicks (#111)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Counting Toothpicks (#111)</span>
+			<p>This quiz was adapted from an ACM programming challenge at the suggestion of Gavin Kistner.</p>
+			<p>Simple math can be done with toothpicks alone.  Positive integers are just a count of toothpicks so three becomes |||.  We can use two toothpicks together to build a plus sign (+) or even tilt those slightly to get a multiplication operator (x).  Putting all of that together, the expression ||x||||+| is another way to express the number nine.</p>
+			<p>This weeks quiz is to write a program that takes a single command-line argument which will be a positive integer.  Your code should build a toothpick expression to calculate the number using as few toothpicks as possible.  For example:</p>
+			<p class="example">$ruby toothpick.rb 9<br />|||x||| = 9 (8 toothpicks)</p>
+			<p>Don't forget to count those operators!</p>
+			<p>Posting toothpick expressions and/or counts for a given number is not spoiler material.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>I think this was a pretty challenging quiz.  I've played around with many of the solutions and noted that some become pretty sluggish with large numbers and at least one still seems to get some incorrect answers.  That's not do to bad coding mind you, it's just a challenging problem to get right.</p>
+			<p>The solutions are very interesting browsing material though, despite any problems.  I saw an RSpec specification, clever math, metaprogramming, and even a little golf.  Do take the time to search through them.  It's worth it.</p>
+			<p>I've chosen to talk a little about Frank Fischer's entry below.  It was significantly smaller than most entries and easy enough to grasp the inner workings of.  There were faster solutions though.</p>
+			<p>Let's get to the code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># Number to calculate with toothpicks</span><br />    <span class="keyword">class</span> ToothNumber<br />      attr_reader :value, :num, :pic<br />      <span class="keyword">def</span> initialize value, num=value, pic=(<span class="string">"|"</span>*num)<br />        <span class="variable">@value</span>, <span class="variable">@num</span>, <span class="variable">@pic</span> = value, num, pic<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> + x; operation(:+, 2, <span class="string">"+"</span>, x); <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> * x; operation(:*, 2, <span class="string">"x"</span>, x); <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> &lt;=&gt; x; <span class="variable">@num</span> &lt;=&gt; x.num; <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> to_s; <span class="string">"#{@pic} = #{@value} (#{@num} Toothpicks)"</span>; <span class="keyword">end</span><br /><br />      private<br />      <span class="comment"># create new ToothNumber using an operation</span><br />      <span class="keyword">def</span> operation meth, n_operator_sticks, operator, x<br />        ToothNumber.new <span class="variable">@value</span>.send(meth, x.value),<br />                        <span class="variable">@num</span> + x.num + n_operator_sticks,<br />                        <span class="variable">@pic</span> + operator + x.pic<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This class is a representation of a toothpick number.  These numbers support the standard operators, so you can work with them much like you do Ruby's native numbers.  Here's an IRb session showing such operations:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; two = ToothNumber.new(2)<br />    =&gt; <span class="comment">#&lt;ToothNumber:0x10a3588 @pic="||", @value=2, @num=2&gt;</span><br />    &gt;&gt; three = ToothNumber.new(3)<br />    =&gt; <span class="comment">#&lt;ToothNumber:0x109c2ec @pic="|||", @value=3, @num=3&gt;</span><br />    &gt;&gt; six = two * three<br />    =&gt; <span class="comment">#&lt;ToothNumber:0x10935d4 @pic="||x|||", @value=6, @num=7&gt;</span><br />    &gt;&gt; eight = six + two<br />    =&gt; <span class="comment">#&lt;ToothNumber:0x108e430 @pic="||x|||+||", @value=8, @num=11&gt;</span><br />    &gt;&gt; eight.to_s<br />    =&gt; <span class="string">"||x|||+|| = 8 (11 Toothpicks)"</span><br /><br /></div></div>
+			<p>Glancing back at the code, the instance variable @value holds the actual number value, @num confusingly holds the toothpick count, and @pic holds the actual toothpick pattern in String form.  Note that ToothNumber objects compare themselves using @num, so lower counts sort first.  Beyond that, the only semi-tricky method is operation().  If you break it down though you will see that it just forwards the math to Ruby and manually builds the new count and String.</p>
+			<p>To see how these are put to use, we need another chunk of code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># contains minimal multiplication-only toothpick for each number</span><br />    <span class="global">$tooths</span> = Hash.new {|h,n| h[n] = tooth_mul n}<br />    <span class="global">$tooths_add</span> = Hash.new {|h,n| h[n] = toothpick n}<br /><br />    <span class="comment"># should return the minimal toothpick-number</span><br />    <span class="comment"># should only use multiplication</span><br />    <span class="keyword">def</span> tooth_mul n<br />      ways = [ToothNumber.new(n)] +<br />      (2..(Math.sqrt(n).to_i)).map{|i|<br />        n % i == 0 ? (<span class="global">$tooths</span>[i] * <span class="global">$tooths</span>[n/i]) : <span class="keyword">nil</span><br />      }.compact<br />      ways.min<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># returns minimal toothpick-number with multiplication and addition</span><br />    <span class="keyword">def</span> toothpick n<br />      ways = [<span class="global">$tooths</span>[n]] +<br />             (1..(n/2)).map{|i| <span class="global">$tooths</span>[n-i] + <span class="global">$tooths_add</span>[i] }<br />      ways.min<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Start with the $tooths Hash.  You can see that it delegates Hash initialization to tooth_mul(), which is just a factor finder.  It walks from two to the square root of the number finding all combinations that multiply to the original number.  It then uses min() to pull the result with the lowest toothpick count.</p>
+			<p>Now remember, we're only talking about multiplication at this point.  $tooths[10] is going to find the two and five factors and return that as a result, since they have a lower count than the ten factor itself.  However, $tooths[13] is just going to return thirteen, since it is a prime number and addition is needed to get a lower count.</p>
+			<p>That brings us to the other Hash and method, which layer addition on top of these factors.  The work here is basically the same:  walk the lower numbers building up all the possible sums equal to the passed integer.  Because this walk indexes into the $tooths factor Hash though, the results will actually make use of multiplication and addition.  That's the answer we are after and again the low count is pulled with min().</p>
+			<p>Here's the final bit of code that turns it into a solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">for</span> i <span class="keyword">in</span> 1..ARGV[0].to_i<br />      puts <span class="global">$tooths_add</span>[i]<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This just walks a count from one to the passed integer printing toothpick counts.  Note that building the bigger numbers isn't generally too much work since the factor cache grows as we count up.</p>
+			<p>My thanks to all who gave this quiz a go and to Gavin for pointing me to the problem in the first place.</p>
+			<p>Tomorrow we will try the other 2006 ACM problem I liked...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236569">David Chelimsky</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236573">Sander Land</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236574">Krishna Dole</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236575">Frank Fischer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236576">Daniel Lucraft</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236586">Marcel Ward</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236605">C Erler</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236606">C Erler (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236654">Andrey Falko</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236796">Donald Ball</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/236913">Donald Ball (2)</a></li>
+			</ol>
+			<p><a href="quiz111_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

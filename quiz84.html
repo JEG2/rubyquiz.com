@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - pp Pascal (#84)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">pp Pascal (#84)</span>
+			<p>by Dirk Meijer</p>
+			<p>I recently showed a friend what an amazing language Ruby was, by quickly programming up a script to calculate Fibonacci's Sequence, and his first response was: "Can you do Pascal's Triangle?"  So I did, which proved harder than expected.</p>
+			<p>For those not familiar with Pascal's Triangle, it is very similar to Fibonacci's Sequence. It's a pyramid of numbers. The outside of the pyramid is all ones, the other numbers are the sum of the two numbers above, like this:</p>
+			<p class="example">&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;1&nbsp;1&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;1&nbsp;2&nbsp;1&nbsp;&nbsp;<br />&nbsp;1&nbsp;3&nbsp;3&nbsp;1&nbsp;<br />1&nbsp;4&nbsp;6&nbsp;4&nbsp;1</p>
+			<p>The input and output should be as follows:</p>
+			<p class="example">$&nbsp;ruby&nbsp;pp_pascal.rb&nbsp;10<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;&nbsp;10&nbsp;&nbsp;&nbsp;&nbsp;10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;&nbsp;15&nbsp;&nbsp;&nbsp;&nbsp;20&nbsp;&nbsp;&nbsp;&nbsp;15&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;&nbsp;&nbsp;21&nbsp;&nbsp;&nbsp;&nbsp;35&nbsp;&nbsp;&nbsp;&nbsp;35&nbsp;&nbsp;&nbsp;&nbsp;21&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8&nbsp;&nbsp;&nbsp;&nbsp;28&nbsp;&nbsp;&nbsp;&nbsp;56&nbsp;&nbsp;&nbsp;&nbsp;70&nbsp;&nbsp;&nbsp;&nbsp;56&nbsp;&nbsp;&nbsp;&nbsp;28&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9&nbsp;&nbsp;&nbsp;&nbsp;36&nbsp;&nbsp;&nbsp;&nbsp;84&nbsp;&nbsp;&nbsp;&nbsp;126&nbsp;&nbsp;&nbsp;126&nbsp;&nbsp;&nbsp;84&nbsp;&nbsp;&nbsp;&nbsp;36&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;</p>
+			<p>A number should be given as command-line argument.  This is the amount of rows the triangle has. For the output, there should be spacing between the numbers based on the size of the numbers with the most digits, so it will look like a proper triangle.</p>
+			<p>Good luck!</p>
+			<p>[Editor's Note:  If you are working through Chris Pine's Learn to Program, you can do this problem using only things you learned in the first eight chapters.  Since he doesn't teach how to grab the row count in those pages though, just add this as the first line of your program:  `rows = ARGV[0].to_i`.  After that, the rows variable will hold the number of rows to print.  --JEG2]</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>My wife, Dana, is the one working through Learning to Program and the reason I added the note to the quiz.  Those watching the solutions will know that she did submit, but she also told me in a private message:</p>
+			<p class="example">But I thought you should know that that problem was HARD!!!!!</p>
+			<p>I said in the quiz that you can do it with only the knowledge you've gained in the first eight chapters, and you can, but it does involve some tricky steps compared to the book problems.  If you decide to build up the triangle in memory for example, you either need one long Array and some clever index work to determine where rows start and stop or you need to work with nested Arrays.  Nested Arrays have a single example in chapter eight and the only the briefest of mentions, so that might be a bit of a leap.</p>
+			<p>However, if you hound your pet geek, he'll give you enough hints to get through it.  Here's the proof, Dana Gray's solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    rows = ARGV[0].to_i<br />    triangle = []<br />    <span class="keyword">if</span> rows &gt;= 1<br />     triangle.push([1])<br />    <span class="keyword">end</span><br />    <span class="keyword">if</span> rows &gt;= 2<br />      triangle.push([1, 1])<br />    <span class="keyword">end</span><br />    last_row = [1, 1]<br /><br />    count = 3<br />    <span class="keyword">while</span> count &lt;= rows<br />      next_row = [1]<br />      index = 0<br />      <span class="keyword">while</span> index &lt; last_row.length - 1<br />        next_row.push last_row[index]+last_row[index + 1]<br />        index = index + 1<br />      <span class="keyword">end</span><br />      next_row.push(1)<br />      triangle.push(next_row)<br />      last_row = next_row<br />      count = count + 1<br />    <span class="keyword">end</span><br /><br />    number_length = last_row[last_row.length / 2].to_s.length<br />    triangle_length = last_row.length * number_length + last_row.length - 1<br />    triangle.each <span class="keyword">do</span> |row|<br />      final_row = []<br />      row.each <span class="keyword">do</span> | number|<br />        final_row.push(number.to_s.center(number_length))<br />      <span class="keyword">end</span><br />      puts final_row.join(<span class="string">' '</span>).center(triangle_length)<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The first line is the one I gave to handle the command-line argument.  I'm not sure if Learn to Program ever covers those, but it hasn't by chapter eight.  It's not too tricky though; ARGV is just an Array holding the arguments passed to your program.</p>
+			<p>In the next couple of lines, Dana creates an Array to hold the triangle, and pushes the first two rows (as long as we are going that far).  She then declares the last_row shortcut, to save typing triangle[triangle.length - 1] all over the place.  That's the only way Learn to Program has taught to fetch the last element of an Array, by chapter eight.</p>
+			<p>In the middle section of code, Dana builds up Pascal's Triangle row by row.  The code works by creating a next_row with the leading 1 already in it, walking the last_row to add up numbers for next_row, and slotting the final 1.  Then, last_row is replaced with next_row, so the next run of the loop will have the new data to work with.</p>
+			<p>The final chunk of the code finds the length of the largest number in the triangle and the length of the longest row in the triangle and then uses those to print results.  Note that an extra Array is used here to copy the numbers into while converting them to Strings and sizing them correctly, before the result is join()ed and sent to the screen.</p>
+			<p>Dana's output doesn't exactly match the quiz examples, because only one space is used to separate numbers where the quiz uses as many spaces as there are digits in the largest number.  If we want to do that, we need to change the line length calculation to account for the bigger spaces:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    triangle_length = last_row.length * number_length +<br />                      (last_row.length - 1) * number_length<br /><br /></div></div>
+			<p>and add the extra spaces to the final output:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      puts final_row.join(<span class="string">' '</span> * number_length).center(triangle_length)<br /><br /></div></div>
+			<p>Now, I have great news for all you Learn to Program students.  The more you learn, the easier this problem gets.  You will be surprised how the code just melts away.  To show what I mean, here's a solution from Matthew Moss using a very similar process but with a couple of iterators not yet covered in the book:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> pascal n<br />      rows = []<br /><br />      <span class="comment"># generate data</span><br />      (0...n).each <span class="keyword">do</span> |i|<br />         rows &lt;&lt; <span class="keyword">if</span> i.zero?<br />            [1]<br />         <span class="keyword">else</span><br />            rows[i-1].inject([0]) <span class="keyword">do</span> |m, o|<br />               m[0...-1] &lt;&lt; (m[-1] + o) &lt;&lt; o<br />            <span class="keyword">end</span><br />         <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># calc field width</span><br />      width = rows[-1].max.to_s.length<br /><br />      <span class="comment"># space out each row</span><br />      rows.collect! <span class="keyword">do</span> |row|<br />         row.collect { |x| x.to_s.center(2 * width) }.join<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># display triangle</span><br />      rows.each { |row| puts row.center(rows[-1].length) }<br />    <span class="keyword">end</span><br /><br />    pascal (ARGV[0] || 10).to_i<br /><br /></div></div>
+			<p>This is the same process we examined before, with less variable maintenance work.  Here the triangle is built with some clever use of inject() that uses the last slot of the row being built as a kind of short term memory that gets shaved back off as it is used each time (note the ... in the 0 to -1 Range).  Converting the rows is also much easier here, thanks to the collect() iterator.</p>
+			<p>Now, my good friend Greg Brown tells me real programmers use formulas to build the triangle.  I'm just an imaginary programmer sadly, but Matthew Moss must be real.  Here's another Matthew solution, this one filled with formula-slinging code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Integer<br />      <span class="keyword">def</span> fact<br />         zero? ? 1 : (1..<span class="keyword">self</span>).inject { |m, o| m * o }<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> binom(k)<br />         <span class="keyword">self</span>.fact / (k.fact * (<span class="keyword">self</span> - k).fact)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">def</span> pascal n<br />      <span class="comment"># calc field width</span><br />      width = (n - 1).binom(n / 2).to_s.length<br /><br />      <span class="comment"># keep only one row in memory</span><br />      row = [1]<br /><br />      1.upto(n) <span class="keyword">do</span> |i|<br />         <span class="comment"># print row</span><br />         space = <span class="string">' '</span> * width * (n-i)<br />         puts space + row.collect { |x| x.to_s.center(2*width) }.join<br /><br />         <span class="comment"># generate next row</span><br />         row = row.inject([0]) { |m, o| m[0...-1] &lt;&lt; (m[-1] + o) &lt;&lt; o }<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    pascal (ARGV[0] || 10).to_i<br /><br /></div></div>
+			<p>What is of interest here are the fact() and binom() methods.  This is the binomial coefficient formula that can be used to derive any number in the triangle.</p>
+			<p>More interesting to me though, is that Matthew only uses this to fetch a single number.  You can see that the first action of the pascal() method uses the formula to conjure the middle element of the last row, for field width purposes.  Once you have that, you can build the triangle normally and print rows as you go, as Matthew does here, because you have all the information you need to format them correctly.</p>
+			<p>Now folks, those are only three solutions of over 50!  You should definitely poke around in the others.  Make sure you catch the clever fixes people used to clean up triangle output, like left justifying the left side while right justifying the right side.  Don't miss the example that makes use of multi-methods and certainly don't skip the first ever de-optimized Ruby Quiz solution.  Fun tricks are hiding in so many of the solutions, you must give them a glance.</p>
+			<p>My thanks to Pascal's fans who appear to be legion in numbers.</p>
+			<p>Tomorrow we will try something a little different.  Instead of celebrating Ruby's niceties over other common languages, we will see if we can't dumb it down a bit and put some of the limits back...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198844">Benjohn Barnes</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198867">Vance Heron</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198893">Louis J Scoras</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198898">Mustafa Yilmaz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198902">Eric DUMINIL</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198909">Andrey Falko</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198910">Matthew Smillie</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198911">Andrew Witte</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198912">Adam</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198913">Sigurd Rinde</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198914">Tristan Allwood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198918">Gregory Brown</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198919">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198922">Jacob Fugal</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198925">Kerry Buckley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198928">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198929">Suraj N. Kurapati</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198930">Dominik Bathon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198936">Robert Retzbach</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198939">Andrey Falko (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198943">Erik Veenstra</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198944">Josef 'Jupp' SCHUGT</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198949">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198957">Erik Veenstra (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198959">Boris Prinz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198974">Simon Kr&ouml;ger (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198975">Joey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198986">Mark Van Holstyn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198989">Erik Veenstra (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198994">Dirk Meijer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/198996">Pete Yandell</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199019">Daniel Martin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199020">Sam Kong</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199031">Alexandru E. Ungur</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199046">Farrel Lifson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199052">Dean Poon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199057">Sean Carley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199124">Erik Veenstra (4)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199126">Daniel Martin (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199142">Paul Battley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199151">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199163">Tait Pollard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199177">Dana Gray</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199182">Mike Nelson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199186">Brian Mattern</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199205">Matthew Moss (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199221">Brent Fitzgerald</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199337">Daniel Martin (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199363">Andrew Witte (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199395">John Baylor</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199444">Kelly Norton</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199528">Devin Chalmers</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199556">John Baylor (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199564">Juregen Strobel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/199569">Tom Armitage</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/253985">Ari Brown</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/254045">Stefan Rusterholz</a></li>
+			</ol>
+			<p><a href="quiz84_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

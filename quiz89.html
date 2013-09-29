@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Proper Case (#89)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Proper Case (#89)</span>
+			<p>by elliot temple</p>
+			<p>sometimes i type in all or mostly lowercase. a friend of mine says it's hard to read essays with no capital letters. so the problem is to write a method which takes a string (which could include many paragraphs), and capitalizes words that should be capitalized. at minimum it should do the starts of sentences.</p>
+			<p>solutions could range from simple (a few regexes) to complex (lots of special cases are possible, like abbreviations that use a period). an addition would be using a dictionary to find proper nouns and capitalize those. it could also ask the user about cases the program can't figure out. or log them.</p>
+			<p>i can provide an example solution (regex based) and a list of reasons it doesn't work very well, if you want.</p>
+			<p>sample input:</p>
+			<p>- this email itself works nicely</p>
+			<p>- this one is hard. sometimes i might want to write about gsub vs. gsub! without the "." or "!" causing any capitalization (or the punctuation in quotes).</p>
+			<p>one problem is maybe dealing with sentences that contain periods is too hard. i don't know.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>I'm sad no one but the quiz creator himself gave this problem a shot.  This is a very real problem with all manner of source texts and fixing it is tricky.  There was even a discussion on the mailing list about how you can't count on there being two spaces at the end of a sentence.</p>
+			<p>You really need natural language processing to correctly determine which words to capitalize.  Unfortunately, natural language processing is complex and often not a perfect solution anyway.</p>
+			<p>The good news is that we can use some heuristics to get close.  A heuristic is a loosely defined rule or, put another way, the computer science equivalent to a guess.  These are often developed by just trying to get close to a solution and then tweaking little things here and there to close in on the target.  The result won't be perfect, of course, but it may be good enough.  It's a very agile process and Rubyists love that.</p>
+			<p>Let's see what heuristics Elliot came up with now, starting with some code used to correct common Netspeak misspellings:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    Abbreviations = { <span class="string">"ppl"</span>  =&gt; <span class="string">"people"</span>,<br />                      <span class="string">"btwn"</span> =&gt; <span class="string">"between"</span>,<br />                      <span class="string">"ur"</span>   =&gt; <span class="string">"your"</span>,<br />                      <span class="string">"u"</span>    =&gt; <span class="string">"you"</span>,<br />                      <span class="string">"diff"</span> =&gt; <span class="string">"different"</span>,<br />                      <span class="string">"ofc"</span>  =&gt; <span class="string">"of course"</span>,<br />                      <span class="string">"liek"</span> =&gt; <span class="string">"like"</span>,<br />                      <span class="string">"rly"</span>  =&gt; <span class="string">"really"</span>,<br />                      <span class="string">"i"</span>    =&gt; <span class="string">"I"</span>,<br />                      <span class="string">"i'm"</span>  =&gt; <span class="string">"I'm"</span> }<br /><br />    <span class="keyword">def</span> fix_abbreviations text<br />      Abbreviations.each_key <span class="keyword">do</span> |abbrev|<br />        text = text.gsub <span class="string">%r[(^|(\s))#{abbrev}((\s)|[.,?!]|$)]</span>i <span class="keyword">do</span> |m|<br />          m.gsub(<span class="string">/\w+/</span>, <span class="string">"#{Abbreviations[abbrev]}"</span>)<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />      text<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This code is fairly trivial, but still quite effective.  Using a predefined Hash, the method just scans the text for the keys, swapping them out for the provided values when found.  Note that the expression used to find the key tries to ensure it is not in the middle of some larger word by looking for leading and trailing whitespace or punctuation.</p>
+			<p>That expression could probably be simplified to %r[\b#{abbrev}\b] which looks for word boundaries (a \W\w or \w\W transition) and means close to the same thing.  This would allow Elliot do the search and replace in a single call to gsub(), instead of the current nested call to avoid replacing the surrounding space or punctuation.  (You can do it with a single gsub() call even without using \b, just FYI:  text.gsub(%r[(^|(\s))#{abbrev}((\s)|[.,?!]|$)]i, "\\1#{Abbreviations[abbrev]}\\2").)</p>
+			<p>The important aspect of this solution though is that it knows it's not perfect and gives you the Hash as a means to make it better.  If it doesn't handle your text correctly, you can always add or delete entries from the Hash to improve the results.</p>
+			<p>Let's look at some more code, this time for capitalizing proper nouns:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">"yaml"</span><br /><br />    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> capitalize_proper_nouns text<br />      <span class="keyword">if</span> <span class="keyword">not</span> File.exists?(<span class="string">"proper_nouns.yaml"</span>)<br />        make_capitalize_proper_nouns_file<br />      <span class="keyword">end</span><br />      proper_nouns = YAML.load_file <span class="string">"proper_nouns.yaml"</span><br />      text = text.gsub <span class="string">/\w+/</span> <span class="keyword">do</span> |word|<br />        proper_nouns[word] || word<br />      <span class="keyword">end</span><br />      text<br />    <span class="keyword">end</span><br /><br />    <span class="keyword">def</span> make_capitalize_proper_nouns_file<br />      words = File.read(<span class="string">"/Users/curi/me/words.txt"</span>).split <span class="string">"\n"</span><br />      lowercase_words = words.select {|w| w =~ <span class="string">/^[a-z]/</span>}.map{|w| w.downcase}<br />      words = words.map{|w| w.downcase} - lowercase_words<br />      proper_nouns = words.inject({}) { |h, w| h[w] = w.capitalize; h }<br />      File.open(<span class="string">"proper_nouns.yaml"</span>, <span class="string">"w"</span>) {|f| YAML.dump(proper_nouns, f)}<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This is an interesting two-tiered approach.  If the program can locate a proper_nouns.yaml file, a Hash is pulled from it and used to capitalize the listed nouns.  If the file cannot be found, a hand-off is made to make_capitalize_proper_nouns_file().  The code in that method appears to read a word list file and build up its own list of proper nouns.  This list is then flushed to the YAML file, so it will be found on future loads.</p>
+			<p>What I liked about this was how I could customize it, yet again.  When testing Elliot's code against the quiz text, I just built a quick Hash with the needed keys and values:</p>
+			<p class="example">$ ruby -r yaml -e 'y Hash[*%w[Elliot Temple].map { |pn| [pn.downcase, pn] }.<br />                                             flatten]' &gt; proper_nouns.yaml<br />$ cat proper_nouns.yaml <br />--- <br />temple: Temple<br />elliot: Elliot</p>
+			<p>Getting back to the code, we're again using a trivial regular expression based swap, which you can see in the second half of capitalize_proper_nouns().  It matches all words (well, a run of \w characters) and replaces them with the proper noun capitalization, if there is such a thing, or the word itself, causing no change.</p>
+			<p>Now we can put all of that together with a few more heuristics to get a complete solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> capitalize text<br />      <span class="keyword">return</span> <span class="string">""</span> <span class="keyword">if</span> text.nil?<br />      text = fix_abbreviations text<br />      text = text.gsub <span class="string">/([?!.-]\s+)(\w+)/</span> <span class="keyword">do</span> |m|<br />        <span class="string">"#$1#{$2.capitalize}"</span><br />      <span class="keyword">end</span><br />      text = text.gsub <span class="string">/(\n)(\w+)/</span> <span class="keyword">do</span> |m|<br />        <span class="string">"#$1#{$2.capitalize}"</span><br />      <span class="keyword">end</span><br />      text = text.gsub <span class="string">/\A(\w+)/</span> <span class="keyword">do</span> |m|<br />        <span class="string">"#{$1.capitalize}"</span><br />      <span class="keyword">end</span><br />      text = text.gsub <span class="string">%r[\sHttp://]</span> <span class="keyword">do</span> |m|<br />        <span class="string">"#{$&amp;.downcase}"</span><br />      <span class="keyword">end</span><br />      text = capitalize_proper_nouns text<br />      text<br />    <span class="keyword">end</span><br /><br />    puts capitalize(ARGF.read)<br /><br /></div></div>
+			<p>This method triggers the fixes for abbreviations and proper nouns that we have already examined.  In addition, it uses regular expressions to capitalize word characters following sentence end punctuation as well as words characters at the beginning of a line or the document.  It then corrects the protocol identifier for inline links it may have damaged in the process.</p>
+			<p>So, how does this do on the quiz document?  Generally quite good.  It makes only two obvious errors:</p>
+			<p class="example">By Elliot Temple</p>
+			<p>and:</p>
+			<p class="example">Sometimes I might want to write about gsub vs. Gsub! Without the...</p>
+			<p>The first error is that we generally do not capitalize the by in a byline.  That could probably be worked around with another regular expression correction.</p>
+			<p>The second issue is much harder to get right and here is where we start to miss a natural language processing facility.  When humans read that line we know that gusb!() and without should not be capitalized because of the context they are used in.  The script is not-so-clever though and the period and exclamation point throw it off.  You could add rules to work around these cases as well, but you will definitely be fighting an uphill battle at that point.</p>
+			<p>I still say the end result is quite good though.  Count how many characters are wrong in the quiz and subtract from that the three output issues.  It's a big improvement.</p>
+			<p>My thanks to Elliot Temple for the problem and being brave enough to put together a solution.</p>
+			<p>Tomorrow we'll try our hand at another simple pen and paper game and see who can solve it in record time...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/206898">Elliot Temple</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/207459">Mitchell Koch</a></li>
+			</ol>
+			<p><a href="quiz89_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

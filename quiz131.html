@@ -1,0 +1,94 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Maximum Sub-Array (#131)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Maximum Sub-Array (#131)</span>
+			<p>by Harlan</p>
+			<p>Given an array of integers, find the sub-array with maximum sum.  For example:</p>
+			<p class="example">array:              [-1, 2, 5, -1, 3, -2, 1]<br />maximum sub-array:  [2, 5, -1, 3]</p>
+			<p>Extra Credit:
+ 
+Given a matrix of integers, find the rectangle with maximum sum.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This is a classic algorithmic challenge and despite its seeming simplicity, there's quite a bit you can learn from it.  I'm pretty sure it was this exact problem that finally got Big O Notation through my thick skull, so I'll take that approach with this summary.</p>
+			<p>The obvious code that tends to come to mind for solving this problem is a brute-force search through the subarrays.  That's not a bad thing.  It's very easy to code up and may work for you if the inputs are small enough.  It certainly works for the quiz example.</p>
+			<p>Here's a solution of that by Drew Olson:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="comment"># sum the integer values of array contents</span><br />      <span class="keyword">def</span> int_sum<br />        <span class="keyword">self</span>.inject(0){|sum,i| sum+i.to_i}<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># find the maximum sub array in an array</span><br />      <span class="keyword">def</span> max_sub_array<br />        (0...<span class="keyword">self</span>.size).inject([<span class="keyword">self</span>.first]) <span class="keyword">do</span> |max_sub,i|<br />          (i...<span class="keyword">self</span>.size).each <span class="keyword">do</span> |j|<br />            <span class="keyword">if</span> max_sub.int_sum &lt; <span class="keyword">self</span>[i..j].int_sum<br />              max_sub = <span class="keyword">self</span>[i..j]<br />            <span class="keyword">end</span><br />          <span class="keyword">end</span><br />          max_sub<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># test example</span><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$0</span><br />      my_arr = [-1, 2, 5, -1, 3, -2, 1]<br />      puts <span class="string">"array: #{my_arr.inspect}"</span><br />      puts <span class="string">"maximum sub-array: #{my_arr.max_sub_array.inspect}"</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>I removed a little of Drew's printing code in the above so we could focus on the algorithm, but the results are unchanged.</p>
+			<p>We can see that Drew's code works by walking through all of the indices, with all possible lengths, to check each subarray.  Each subarray is tested against the current best sum and the end result is that the highest total found will be returned.</p>
+			<p>The question we want to ask though, is how long does this take for various inputs?  It's quite zippy for the quiz example:</p>
+			<p class="example">$ time ruby -r max_sub_array -e 'p [-1, 2, 5, -1, 3, -2, 1].max_sub_array'<br />[2, 5, -1, 3]<br /><br />real    0m0.013s<br />user    0m0.007s<br />sys     0m0.005s</p>
+			<p>It slows down pretty quick though, with bigger inputs:</p>
+			<p class="example">$ time ruby -r max_sub_array<br />            -e 'p Array.new(100) { rand(11) - 5 }.max_sub_array'<br />[4, 0, 1, 4, -1, 1, 4, 0, 4, 3, 1, 0, 3, -4, 1, 4, -1, 0, 4, -3, 1, -3, 4, 2]<br /><br />real    0m0.307s<br />user    0m0.301s<br />sys     0m0.006s<br />$ time ruby -r max_sub_array<br />            -e 'p Array.new(1_000) { rand(11) - 5 }.max_sub_array'<br />[3, 1, -3, -1, 2, 5, 4, 3, -5, -2, 3, 1, 1, -2, -3, 4, 5, 4, 4, -3, -1, …]<br /><br />real    3m39.856s<br />user    3m38.455s<br />sys     0m0.343s</p>
+			<p>The issue here is that those nested loops just execute many, many times.  In fact, that inner each() is called 500,500 times for an Array with 1,000 entries.  If we want to tackle those bigger lists we need to lower that count.</p>
+			<p>One way to find the algorithms with lower iteration counts is to randomly spot check the solutions on an Array of similar length.  In doing so, I stumbled across this solution from Justin Either:</p>
+			<p class="example">$ time ruby -r max_sub_array<br />            -e 'p MaxSubArray.new.find(Array.new(1_000) { rand(11) - 5 })'<br />[1, 4, 1, 2, -5, -3, 4, 2, 3, 1, -2, 4, 5, 1, 3, 0, 5, -1, 4, 4, 2, 4, …]<br /><br />real    0m0.016s<br />user    0m0.009s<br />sys     0m0.006s<br />$ time ruby -r max_sub_array<br />            -e 'p MaxSubArray.new.find(Array.new(10_000) { rand(11) - 5 })'<br />[3, 1, -2, 5, 4, 5, 0, -3, 0, 3, 5, -3, -4, -3, 5, -3, -1, 4, 5, -3, 3, …]<br /><br />real    0m0.047s<br />user    0m0.030s<br />sys     0m0.006s<br />$ time ruby -r max_sub_array<br />            -e 'p MaxSubArray.new.find(Array.new(100_000) { rand(11) - 5 })'<br />[4, 1, -2, 3, 4, -4, -4, 4, 5, 1, -3, 4, -5, 5, -5, 1, -1, 0, -5, 1, -1, …]<br /><br />real    0m0.286s<br />user    0m0.267s<br />sys     0m0.011s</p>
+			<p>As you can see, that's scaling to much higher counts much quicker.  That's a sure sign of a more clever algorithm, so let's take a peek at the code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># Object defining a sub-array of integer values</span><br />    <span class="comment"># The sub-array contains a start and end index</span><br />    <span class="comment"># defining a region of the master array</span><br />    <span class="keyword">class</span> SubArray<br />     <span class="keyword">def</span> initialize<br />       <span class="variable">@start</span> = 0<br />       <span class="variable">@end</span> = 0<br />       <span class="variable">@sum</span> = 0<br />     <span class="keyword">end</span><br /><br />     <span class="comment"># Set boundaries of the sub-array</span><br />     <span class="keyword">def</span> set_bounds(list_start, list_end)<br />       <span class="variable">@start</span>, <span class="variable">@end</span> = list_start, list_end<br />     <span class="keyword">end</span><br /><br />     <span class="comment"># Provide get/set accessors</span><br />     attr_reader :start, :<span class="keyword">end</span>, :sum<br />     attr_writer :sum<br />    <span class="keyword">end</span><br /><br /><br />    <span class="keyword">class</span> MaxSubArray<br />     <span class="comment"># Finds the sub-array with the largest sum</span><br />     <span class="comment"># Input: a list of integers</span><br />     <span class="keyword">def</span> find(list)<br />       max = SubArray.new<br />       cur = SubArray.new<br /><br />       <span class="keyword">for</span> i <span class="keyword">in</span> 0...list.size<br />         cur.sum = cur.sum + list[i]<br /><br />         <span class="keyword">if</span> (cur.sum &gt; max.sum)<br />           max.sum = cur.sum<br />           cur.set_bounds(cur.start, i)<br />           max.set_bounds(cur.start, i)<br />         <span class="keyword">elsif</span> (cur.sum &lt; 0)<br />           <span class="comment"># If sum goes negative, this region cannot have the max sum</span><br />           cur.sum = 0<br />           cur.set_bounds(i + 1, i + 1)<br />         <span class="keyword">end</span><br />       <span class="keyword">end</span><br /><br />       list.slice(max.start, max.<span class="keyword">end</span> - max.start + 1)<br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>First, you need to take a look at the SubArray class.  This is just a bookkeeping tool to keep track of the bounds and sum of any given subarray.  There is a minor bug here that hinders this solution on all-negative Arrays like [-3, -1], but it can be fixed by initializing sum to -1.0/0.0 instead of 0.</p>
+			<p>The second class holds the actual algorithm.  The trick here is pretty simple once you've seen it before.  Basically, we start from the beginning of the Array and expand the subarray to following indices.  We keep track of the best total seen thus far and replace that when we find better totals.</p>
+			<p>The trick is that we hop our subarray indices forward whenever the running total dips into the negatives.  A negative total is effectively starting over, so skipping over all of those numbers costs us nothing.  The run is broken.</p>
+			<p>This algorithm in linear, so that for iterator only executes 1,000 times for an Array of that length.  That's where your big speed gain comes from in this case and the reason algorithms are important when dealing with larger inputs.</p>
+			<p>My thanks to all the algorists that showed off the variety of solutions that can be applied here.</p>
+			<p>Ruby Quiz will now take a one week break to allow everyone the chance to compete in the ICFP Contest (http://www.icfpcontest.org/).  If you are a fan of programming contests, I strongly encourage you to give this yearly competition a shot.  It's always challenging and rewarding.  Best of luck!</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259648">Aureliano Calvo</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259651">gabriele renzi</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259655">Aureliano Calvo (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259656">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259660">Harry Kakueki</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259661">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259663">Henrik Schmidt-M&oslash;ller</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259664">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259665">Anton</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259672">Alexandru E. Ungur</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259673">Harry Kakueki (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259674">Will Bailey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259675">Jesse Brown</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259676">Morton Goldberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259677">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259678">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259679">Todd Benson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259687">Anton (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259692">Anton (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259698">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259699">Matt Murphy</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259700">Florian Gross</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259701">Eric Mahurin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259714">Gordon Thiesfeld</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259725">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259731">Michael Glaesemann</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259797">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259861">Eric Mahurin (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259877">Michael Glaesemann (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/259887">Rob Beidenharn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/260016">Drew Olson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/260104">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/260254">Kyle Schmitt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/260283">harlan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/260365">Harry Kakueki (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/260418">Matthew Rudy</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/260622">Yossef Mendelssohn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/261574">Ivan Zdravkovic</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/265795">Jens H&auml;&szlig;ler</a></li>
+			</ol>
+			<p><a href="quiz131_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

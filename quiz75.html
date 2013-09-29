@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Refactoring (#75)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Refactoring (#75)</span>
+			<p>by Pat Eyler</p>
+			<p>This week's quiz is a bit of a departure from the normal.  Instead of submitting different implementations of the same code, we'd like you to submit different implementations of the same process -- Refactoring.</p>
+			<p>Refactoring is the art of improving the design of existing code, without changing it's functional behaviour.  It is well documented in the book 'Refactoring' by Martin Fowler, and on his website:</p>
+			<p><a href="http://www.refactoring.com">Refactoring Home Page</a></p>
+			<p>The quiz this week is to submit refactorings of code you use -- whether your own code, a library or application for RubyForge, or even something from the Standard Library.  Any submission should implement a refactoring from:</p>
+			<p><a href="http://www.refactoring.com/catalog/index.html">Refactorings in Alphabetical Order</a></p>
+			<p>or other citable sources, e.g.:</p>
+			<p><a href="http://kallokain.blogspot.com/2006/01/refactoring-extract-mixin.html">Refactoring: Extract Mixin</a></p>
+			<p>Each Submission should follow this outline:</p>
+			<p class="example">Refactoring name (and citation if needed)<br />Original code<br />Explanation of the purpose and mechanics of the refactoring<br />New code<br />(optionally, unit tests created/used to verify the code)</p>
+			<p>Submissions will be combined into an online catalog of Ruby Refactorings, probably on the RubyGarden wiki.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Hopefully this quiz caused some of us to read Martin Fowler's Refactoring.  I know it did exactly that for me, though it has been on my want-to-read list for some time now.  I'm half-way through it now and I can only recommend everyone reading this pick up a copy immediately.</p>
+			<p>Each of this week's solutions came with its own write-up so there isn't a lot left for me to dissect.  Instead, I'll take this chance to talk a little about the most interesting part of this exercise to me.</p>
+			<p>It's my opinion that a large majority of the refactoring patterns were designed with the static languages in mind.  I'm very intrigued by how a language like Ruby changes the game.  Let's me see if I can give some examples.</p>
+			<p>First, I mentioned in my write-up that part of my refactoring called for making a method abstract.  After some thought, I decided that meant deleting the method in Ruby.  (See my solution for the reasoning.)</p>
+			<p>Here's another thought:  many of the refactorings tell you to declare a variable as final, to ensure that it isn't changing.  What's the Ruby equivalent to that?  I don't think we have one.  We can #freeze the object, but that won't help us if the variable is reassigned.  I don't see a good answer there.</p>
+			<p>But there are two sides to every coin and we have some nice advantages.  For example, Extract Method talks a lot about how the local variables can complicate extraction, especially if many of them are changed by the extracted code.  This is much less of an issue in Ruby though, since we can have the extracted method take a block and use the variables in there however we need.  In fact, this means we can use Extract Method quite a bit more often, since the code we pull just needs to be close to similar and we can handle the differences in the block.</p>
+			<p>Dave Burt was also thinking along these lines and went all the way to introduce some Ruby centric refactorings.  Here's an example:</p>
+			<p class="example">Refactoring 2: Remove Unused Scope<br />/You have a begin...end block that introduces a scope that is unused./<br />*Remove the unused scope.*<br /><br />Thus:<br /><br />  def foo<br />    begin<br />      bar<br />    rescue<br />      baz<br />    end<br />  end<br /><br />Becomes:<br /><br />  def foo<br />    bar<br />  rescue<br />    baz<br />  end</p>
+			<p>I would love to see many more of these.  Perhaps we could come up with a Replace Similar Methods with Metaprogrammed Definitions and a Convert a Family of Methods to a Single method_missing() Call recipes.  Food for thought.</p>
+			<p>A big thank you to all who supported this deviation from our usual fun and games.  I think Pat hit on a super important topic here and we would all do well to learn more about it.</p>
+			<p>Tomorrow, Matthew Moss is back with a quiz about txet smnraiclbg...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189062">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189097">Pat Eyler</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189098">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/189159">Ilmari Heikkinen</a></li>
+			</ol>
+			<p><a href="quiz75_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

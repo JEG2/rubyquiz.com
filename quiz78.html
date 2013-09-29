@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Bracket Packing (#78)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Bracket Packing (#78)</span>
+			<p>by Ross Bamford</p>
+			<p>The BigCo Bracket Company, one of the world's largest suppliers of brackets, hinges and fittings, has lately been experiencing problems in it's manufacturing division, with a large number or brackets lost or broken in transit owing to faulty packaging at the end of the line.</p>
+			<p>Investigations into the cause of the problem have led engineers to an ancient COBOL program controlling the packaging machinery. This program is responsible for selecting the type of packaging a given bracket should be shipped in, based on input from an array of sensors on the production line. It then sends a  description of the package to the packager itself, which packs the bracket and sends it on to shipping. The description is a simple text string, made up of brackets with the following format:</p>
+			<p class="example">(B)     - Bracket in a soft wrapping<br />[B]     - Bracket in a cardboard box<br />{B}     - Bracket in a wooden box</p>
+			<p>Often, brackets have multiple layers of packaging for protection, for example:</p>
+			<p class="example">{(B)}   - Soft-wrapped bracket in a wooden box<br />[{B}]   - Wooden-boxed bracket with cardboard outer<br /><br />[{(B)}{(B)(B)}] - Wooden boxed single and double bracket packs with soft<br />                  inner wrap, in cardboard outer. </p>
+			<p>Now, the problem is that this venerable program has for some reason begun to output malformed packaging descriptions, occasionally missing off a bracket, for example:</p>
+			<p class="example">[{(B}{(B)(B)}]</p>
+			<p>or:</p>
+			<p class="example">{(B)}{(B)(B)}]</p>
+			<p>After a fruitless search for someone with the skills to fix this problem, the engineers changed tack and called you in to fix the problem from the outside.</p>
+			<p class="example">What needs to be done?<br />======================</p>
+			<p>Basically, the plan is to insert another computer between the controller and the packer, upon which will run your program. The engineers can handle the integration with their systems - they just need you to write a slick bit of Ruby code to validate the packaging descriptions as they're passed in. You've been given two choices:</p>
+			<p class="example">* Check the description, and return exitcode indicating it's okay (0)<br />  or bad (1). If correct, you should also print the description to stdout.<br />  If it's bad, the system can then force the controller to try again.<br /><br />* Fix the description, if possible, and print it to stdout. The system<br />  will then pass the fixed code to the packer.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>As I'm sure you have noticed by now, this was a very popular quiz.  The problem gave two options for solutions and I'm glad to see that we had a fair number of both.  Let's examine a couple of checkers and one corrector.</p>
+			<p>First, we will have a look at a solution that just checks the packer instructions.  This is an improved version of my own code, based on changes I learned from Ross Bamford's solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/local/bin/ruby -w</span><br /><br />    require <span class="string">"strscan"</span><br /><br />    stack = Array.new<br />    input = StringScanner.new(ARGF.read)<br /><br />    <span class="keyword">until</span> input.eos?<br />      <span class="keyword">if</span> input.scan(<span class="string">/[\[({]/</span>)<br />        stack.push(input.matched)<br />      <span class="keyword">elsif</span> input.scan(<span class="string">/[\])}]/</span>)<br />        exit(1) <span class="keyword">unless</span> <span class="string">"#{stack.pop}#{input.matched}"</span> =~ <span class="string">/\A(?:\[\]|\(\)|\{\})\Z/</span><br />      <span class="keyword">else</span><br />        input.scan(<span class="string">/[^\[\](){}]+/</span>)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br />    exit(1) <span class="keyword">unless</span> stack.empty?<br /><br />    exit(1) <span class="keyword">if</span> input.string =~ <span class="string">/\(\)|\[\]|\{\}/</span><br /><br />    puts input.string<br /><br /></div></div>
+			<p>You can see that I start by pulling in the StringScanner library and wrapping the input in an instance of that class.  I also create a stack to help me with the checks we will talk about next.</p>
+			<p>The until loop may be the longest section of code, but it is a simple process.  Here we just work through the input in chunks, which can be one of three things.  If a chunk is an opening parenthesis, bracket, or brace, we push it onto the stack (in the if branch).  If we find a run of non-parenthesis/bracket/brace characters (the Bs in the quiz examples), we skip right over them (the else branch).  Finally, each time we meet a closing parenthesis, bracket, or brace, we pop the latest opener off of the stack and make sure we have a matched pair (the elsif branch).  When we have run through all of the characters, the stack should be empty?() if we properly matched all of the packaging material.  (Otherwise, we have an opener that was never closed.)</p>
+			<p>There's still one other condition our stack check didn't catch.  With an input like [{(B)()}], we have an empty set of packaging that doesn't make sense.  I use one last Regexp to spot these cases.</p>
+			<p>If my expectations are not satisfied at any point, there is no need to finish the checks and the program just exit()s with a code of one indicating the error.  If we make it all the way to the end, it means I am satisfied and the program will naturally exit() with the zero all-clear code, after printing the packing sequence.</p>
+			<p>The minus of this stack trick is that it didn't cover the edge cases well, so I had to add more checks to handle them.  Some found a better process to get around this, which was to "unwrap" each layer of packing.  Here's a nice example from Christian Neukirchen:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> unwrap(desc)<br />      [desc.gsub!(<span class="string">'BB'</span>,  <span class="string">'B'</span>), desc.gsub!(<span class="string">'(B)'</span>, <span class="string">'B'</span>),<br />       desc.gsub!(<span class="string">'[B]'</span>, <span class="string">'B'</span>), desc.gsub!(<span class="string">'{B}'</span>, <span class="string">'B'</span>)].nitems &gt; 0<br />    <span class="keyword">end</span><br /><br />    <span class="keyword">def</span> valid?(desc)<br />      desc = desc.dup<br />      <span class="keyword">true</span>  <span class="keyword">while</span> unwrap desc<br />      desc == <span class="string">"B"</span><br />    <span class="keyword">end</span><br /><br />    packet = ARGV.first.to_s<br />    <span class="keyword">if</span> valid? packet<br />      puts packet<br />      exit 0<br />    <span class="keyword">else</span><br />      exit 1<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Start with the bottom third here.  You can see the input packet is read and then checked by valid?().  Depending on the result, the if statement handles the printing and exit codes.</p>
+			<p>Now we can move up to valid?().  It does three things:  copy the input, run unwrap() on the input until it returns false, and check to see if we are left with a single B at the end.  That of course leads us to the magic unwrap()er.</p>
+			<p>The unwrap() method tries to perform four global substitutions.  The first just combines and side by side Bs.  The other three remove any packing around a (B), [B], or {B} respectively (leaving just the B).  The results of all four substitutions are gathered into an Array and the non-nil items are counted.  (gsub!() returns nil if it didn't change anything.)  If that count is greater than zero, we made a change and should loop again to check for more, so true is returned.  When all four substitutions are nil, we have unwrap()ed the package as far as possible and can stop.</p>
+			<p>I thought that solution came out cleaner, with less special cases.</p>
+			<p>Now what if you wanted to go the distance and do the corrections too?  Here's the beginning of one possible solution by Kerry Buckley:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    Brackets = {<span class="string">'('</span> =&gt; <span class="string">')'</span>, <span class="string">'['</span> =&gt; <span class="string">']'</span>, <span class="string">'{'</span> =&gt; <span class="string">'}'</span>}<br /><br />    <span class="comment"># Adds missing close brackets (aborts on error unless @fix).</span><br />    <span class="keyword">def</span> fix_closings(str)<br />      closers = []<br />      fixed = <span class="string">""</span><br />      str.split(<span class="string">//</span>).each <span class="keyword">do</span> |c|<br />        <span class="keyword">if</span> Brackets.has_key?(c)<br />          <span class="comment"># Add expected corresponding bracket to a stack</span><br />          closers.push(Brackets[c])<br />        <span class="keyword">elsif</span> Brackets.has_value?(c)<br />          closer = closers.pop<br />          <span class="keyword">if</span> closer<br />            <span class="comment"># Append any missing closing brackets</span><br />            <span class="keyword">while</span> closer != c<br />              abort <span class="keyword">unless</span> <span class="variable">@fix</span><br />              fixed &lt;&lt; closer<br />              closer = closers.pop<br />            <span class="keyword">end</span><br />          <span class="keyword">else</span><br />            abort <span class="keyword">unless</span> <span class="variable">@fix</span><br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />        fixed &lt;&lt; c<br />      <span class="keyword">end</span><br />      <span class="comment"># If we've hit the end of the description, make sure any leftover</span><br />      <span class="comment"># closing brackets are added</span><br />      closers.reverse.each {|a| fixed &lt;&lt; a}<br />      fixed<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method works similar to the stack solution we examined earlier.  Here the closers variable holds the stack, which gets added to anytime the code runs into an opener.  Then, when it is time to close a pair (because we have reached a closer or the end of the input), the stack is popped until we find the correct closer or empty the stack.</p>
+			<p>Now this will complete any opened sets, whether the input had them right or not.  See if a closer is reached in the input that doesn't match the latest opening, popping the stack until we get to it closes all outstanding pairs up to that point.</p>
+			<p>What this doesn't yet handle is pairs that were never opened.  For that, we need another trick:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># Reverses the description, mirroring brackets (eg "{foo]" =&gt; "[oof}").</span><br />    <span class="keyword">def</span> reverse_desc(str)<br />      new_str = <span class="string">""</span><br />      str.split(<span class="string">//</span>).each <span class="keyword">do</span> |c|<br />        <span class="keyword">if</span> Brackets.has_key?(c)<br />          new_str &lt;&lt; Brackets[c]<br />        <span class="keyword">elsif</span> Brackets.has_value?(c)<br />          new_str &lt;&lt; Brackets.invert[c]<br />        <span class="keyword">else</span><br />          new_str &lt;&lt; c<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />      new_str.reverse<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This just reverses a string, with a catch:  all parenthesis, brackets, and braces are flopped.  If it was an opener it becomes a closer, and visa versa.</p>
+			<p>Now if you fix the input once, reverse and fix again, then reverse back to normal, you end up with a totally corrected input.  Here's the application code that triggers that process:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="variable">@fix</span> = ARGV.shift == <span class="string">"-f"</span><br />    desc = gets.chomp<br />    <span class="comment"># Add missing closing brackets, flip the description and repeat, then flip</span><br />    <span class="comment"># it back the right way round again</span><br />    fixed = reverse_desc(fix_closings(reverse_desc(fix_closings(desc))))<br />    puts fixed<br /><br /></div></div>
+			<p>Very clever Kerry.  Thanks for sharing.</p>
+			<p>A big thank you to all who played with this quiz.  You all taught me clever approaches this week.</p>
+			<p>Next week, Ross is in charge and he's got a great problem for you.  After that, there will be one week off, then I'll return with more material.  See you then!</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191785">Sander Land</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191795">Gautam Dey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191799">Alexandru E. Ungur</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191804">Kerry Buckley</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191809">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191812">Louis J. Scoras</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191814">Logan Capaldo</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191816">Roy Sutton</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191818">C Erler</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191821">Pat Maddox</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191851">Stefano Taschini</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191872">Shane Emmons</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191874">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191884">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191921">John Browning</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191980">Francisco Ortiz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/191987">Stuart Holden</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/192030">Ross Bamford</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/192033">Benjohn Barnes</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/192035">Stuart Holden (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/192038">Benjohn Barnes (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/192216">Ed Howland</a></li>
+			</ol>
+			<p><a href="quiz78_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Cryptograms (#13)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Cryptograms (#13)</span>
+			<p>by Glenn Parker</p>
+			<p>GOAL: Given a cryptogram and a dictionary of known words, find the best
+possible solution(s) to the crytogram.  Extra points for speed.  Coding 
+a brute force solution is relatively trivial, but there are many 
+opportunities for the clever optimizer.</p>
+			<p>A cryptogram is piece of text that has been passed through a simple
+cipher that maps all instances of one letter to a different letter.  The
+familiar rot13 encoding is a trivial example.</p>
+			<p>A solution to a cryptogram is a one-to-one mapping between two sets of
+(up to) 26 letters, such that applying the map to the cryptogram yields
+the greatest possible number from words in the dictionary.</p>
+			<p>Both the dictionary and the crytogram are presented as a set of words,
+one per line.  The script should output one or more solutions and the 
+full or partial  mapping for each solution.  An example cryptogram and 
+solution are provided, below.</p>
+			<p>Three unsolved cryptograms given.  Each cryptogram uses a different 
+mapping.  The cryptograms may contain a few words that are not in the 
+dictionary, e.g. an author's name is commonly appended to quoted text 
+in cryptograms.  Many published cryptograms also contain punctuation in 
+plaintext as a clue to the solver.  The cryptograms below contain no 
+punctuation, since it just confuses dictionary-based searches.</p>
+			<p>The dictionary I used was 2of4brif.txt, available as part of the 
+12Dicts package at 
+http://prdownloads.sourceforge.net/wordlist/12dicts-4.0.zip.  Given the 
+size of the file (~ 1Mb), it is not included in this message, but I do 
+think it would be best if participants all used the same dictionary.</p>
+			<p class="example">EXAMPLE:<br /><br />gebo<br />tev<br />e<br />cwaack<br />cegn<br />gsatkb<br />ussyk<br /><br />SOLUTION:<br /><br />mary<br />had<br />a<br />little<br />lamb<br />mother<br />goose<br /><br />in:  abcdefghijklmnopqrstuvwxyz<br />out: trl.a.m...e..by...ohgdi.s.<br /><br />Note: dots in the "out" side of the mapping indicate unused input <br />letters.</p>
+			<p class="example">CRYPTOGRAMS:<br /><br />-----<br />crypto1.txt<br />-----<br />zfsbhd<br />bd<br />lsf<br />xfe<br />ofsr<br />bsdxbejrbls<br />sbsfra<br />sbsf<br />xfe<br />ofsr<br />xfedxbejrbls<br />rqlujd<br />jvwj<br />fpbdls<br /><br />-----<br />crypto2.txt<br />-----<br />mkr<br />ideerqruhr<br />nrmsrru<br />mkr<br />ozgcym<br />qdakm<br />scqi<br />oui<br />mkr<br />qdakm<br />scqi<br />dy<br />mkr<br />ideerqruhr<br />nrmsrru<br />mkr<br />zdakmudua<br />nja<br />oui<br />mkr<br />zdakmudua<br />goqb<br />msodu<br /><br />-----<br />crypto3.txt<br />-----<br />ftyw<br />uwmb<br />yw<br />ilwwv<br />qvb<br />bjtvi<br />fupxiu<br />t<br />dqvi<br />tv<br />yj<br />huqtvd<br />mtrw<br />fuw<br />dwq<br />bjmqv<br />fupyqd</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>by Glenn Parker</p>
+			<p>Solving a cryptogram by brute force is prohibitively expensive.  The maximum
+number of possible solutions is 26!, or roughly 4*10^26, so the first challenge
+is to pare down the search to something manageable.</p>
+			<p>Both my solution and Michael's begin with the insight that any word, either a
+regular dictionary word or a cryptographic token, can be viewed as a pattern of
+repeated and non-repeated characters.  For example, "banana" has the pattern [1
+2 3 2 3 2], where the first letter is used exactly once and the second letter
+is used three times and the third letter is used twice.  These patterns group
+all known words into families.  The word, banana, belongs to the same family as
+the word, rococo.</p>
+			<p>All words in a dictionary can be grouped into families according to their
+patterns, and each cryptographic token has its own pattern that corresponds
+(with any luck), to one of the families from the dictionary.  If a token has no
+matching family, then it cannot be solved with the given dictionary, so we
+won't worry about that case too much.</p>
+			<p>We start by assuming that one of the cryptographic tokens corresponds to one of
+the words in its family.  This pairing produces a partial map of input to
+output characters.  So, if we examine the token, xyzyzy, we might assume that
+it is really the word, banana.  The partial map that results is x-&gt;b y-&gt;a z-&gt;n,
+or</p>
+			<p class="example">abcdefghijklmnopqrstuvwxyz<br />.......................ban</p>
+			<p>Note that this mapping will affect all other cryptographic tokens that share
+the letters x, y, and z.  In fact, it may even solve some of them completely,
+e.g. "zyx" becomes "nab".  Or, the map may convert another token into a word
+that is not in the dictionary, e.g. "zyxxyz" becomes "nabban", which is not in
+my dictionary.  This is a useful trick that will reduce the size of the search.</p>
+			<p>Next we assume that another token can be mapped into a dictionary word from its
+family, which produces another partial map that must be combined with the first
+map.  There are two ways this combination can fail.  First, the new map may
+have a previously mapped input letter going to a different output letter, so if
+we mapped "uvwxyz" to "monkey", the result would be a map where "x" mapped to
+both "b" and "k".  Second, the new map may have a previously unused input
+letter going to an output letter that was already used, so if we mapped
+"abcdef" to "monkey", the result would map both "c" and "z" to "n". Failed
+mappings also serve to reduce the size of the search.</p>
+			<p>For my solution, I used a depth-first search, working through the tokens trying
+every word in its family.  The tokens are ordered according increasing family
+size, so the tokens with the fewest possible solutions are examined first.  At
+each level of the recursion, all the words for a token are applied in sequence
+to the current map.  If the resulting map is valid, I recurse and the new map
+is applied to the remaining unsolved tokens to see if they are already solved
+or unsolvable.  Solved tokens are ignored for the rest of this branch of the
+search, and unsolvable tokens are shelved.  Then I start working on the next
+token with the new map.</p>
+			<p>The recursion terminates when a complete map is found, or the number of shelved
+(unsolvable) tokens exceeds a limit, or every family word has been used for the
+last token.</p>
+			<p>We are interested in maps that do not yield dictionary words for every token. 
+This is because cryptograms often contain non-dictionary words, and so we may
+be satisfied by a partial solution even when a full solution is impossible. 
+Finding partial solutions is more expensive than finding only full solutions,
+since the search space can be significantly larger.  Aside from the trick of
+shelving unsolvable words, partial solutions require us to selectively ignore
+tokens that may be "spoiling" the search even though they produce valid maps.
+Neither Michael's solution nor my own fully implements this as far as I can
+tell.</p>
+			<p>Michael represents each map as a set of character pairs.  Every possible
+partial map for each individual token is calculated and forms a set of maps for
+that token.  Tokens are ordered by the increasing size of their set of maps, on
+the assumption that smaller sets are more constraining and thus simplify the
+search.</p>
+			<p>Some clever set operations are used to progressively combine each token's set
+of maps into a master set of maps.  When mixing in a token's set of maps
+produces an empty set of maps, that token is ignored.  After all the sets have
+been combined, you are left with a set of maps that solve some or all of the
+cryptogram.</p>
+			<p>The weakness in both mine and Michael's approach is that tokens are always
+mixed in to the solution using a single pre-defined order.  But the tokens that
+are mixed in first can have an overwhelming influence on the final maps that
+result.  In the worst case, the first token to be mapped can make it impossible
+to add any other tokens to the map.</p>
+			<p>The only solution I know is to add another wrapper around the entire search
+process that mutates the order of the token mixing.  I've implemented this in
+Python, but not in the Ruby version, and I think Michael's solution might be a
+better place to start from when persuing this.</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125051">Michael C. Libby</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125135">Glenn Parker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125302">Cedric Foll</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125414">Vance A Heron</a></li>
+			</ol>
+			<p><a href="quiz13_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

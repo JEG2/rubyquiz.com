@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Mexican Blanket (#127)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Mexican Blanket (#127)</span>
+			<p>by Scott Prager</p>
+			<p>I'm looking at this blanket my dad got in Mexico, and I'm noticing that it has an interesting gradient. There are two colors (c1 and c2) and the outside c1 is 5 stitches wide, then a 1 stitch c2, 4 stitches c1, 2 stitches c2... It looks something like this:</p>
+			<p class="example">RRRRRBRRRRBBRRRBBBRRBBBBRBBB<br />RRRRBRRRRBBRRRBBBRRBBBBRBBBB<br />RRRBRRRRBBRRRBBBRRBBBBRBBBBB<br />RRBRRRRBBRRRBBBRRBBBBRBBBBBY<br />RBRRRRBBRRRBBBRRBBBBRBBBBBYB<br />BRRRRBBRRRBBBRRBBBBRBBBBBYBB <br />RRRRBBRRRBBBRRBBBBRBBBBBYBBB<br />RRRBBRRRBBBRRBBBBRBBBBBYBBBB<br />RRBBRRRBBBRRBBBBRBBBBBYBBBBY<br />RBBRRRBBBRRBBBBRBBBBBYBBBBYY<br />BBRRRBBBRRBBBBRBBBBBYBBBBYYB<br />BRRRBBBRRBBBBRBBBBBYBBBBYYBB<br />RRRBBBRRBBBBRBBBBBYBBBBYYBBB <br />RRBBBRRBBBBRBBBBBYBBBBYYBBBY<br />RBBBRRBBBBRBBBBBYBBBBYYBBBYY<br />BBBRRBBBBRBBBBBYBBBBYYBBBYYY<br />BBRRBBBBRBBBBBYBBBBYYBBBYYYB<br />BRRBBBBRBBBBBYBBBBYYBBBYYYBB<br />RRBBBBRBBBBBYBBBBYYBBBYYYBBY<br />RBBBBRBBBBBYBBBBYYBBBYYYBBYY <br />BBBBRBBBBBYBBBBYYBBBYYYBBYYY<br />BBBRBBBBBYBBBBYYBBBYYYBBYYYY<br />BBRBBBBBYBBBBYYBBBYYYBBYYYYB<br />BRBBBBBYBBBBYYBBBYYYBBYYYYBY<br />RBBBBBYBBBBYYBBBYYYBBYYYYBYY<br />BBBBBYBBBBYYBBBYYYBBYYYYBYYY<br />BBBBYBBBBYYBBBYYYBBYYYYBYYYY <br />BBBYBBBBYYBBBYYYBBYYYYBYYYYY</p>
+			<p>It goes on and on like that and when one color ends, another begins. When two sets of gradients meet, there is a thick separator. Two gradients don't always meet at the same color, but their opposite borders are usually the same. (ex: black-to-yellow |separator| white-to-black) There is also the occasional gradient of thick bars of equal length; ex: |green|-|yellow|-|red|. It looks like this:</p>
+			<p><a href="http://www1.istockphoto.com/file_thumbview_approve/2544046/2/">Photo</a></p>
+			<p>So the challenge is to make a pattern generator to generate the patterns as seen in the ASCI and picture. It should, or rather NEEDS to, contain the Mexican flag as it is respectful to the culture where this challenge comes from. For extra credit, try to put them on a blanket of 200x100 pexels. And if you really need extra credit to graduate, make the patterns symmetrical, however make the colors in the patterns NOT symmetrical (ex: WWRW middle OBOO).</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Several solutions to this quiz called out to RMagick to draw pictures of their work.  That made for some pretty output.  One such solution was from Justin Ethier and I want to take a look at that code.</p>
+			<p>Justin observed that each row of the pattern is just the previous row shifted over one pixel.  In order to build those rows, Justing decided to just build one long pattern and slice it as needed.  Here's that chunk of code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> create_gradient(colors, width=5)<br />     pattern = []<br /><br />     <span class="keyword">for</span> i <span class="keyword">in</span> 0...(width)<br />       (width-i).times { pattern.push(colors[0]) }<br />       (i+1).times { pattern.push(colors[1]) }<br />     <span class="keyword">end</span><br /><br />     <span class="keyword">for</span> i <span class="keyword">in</span> 0...(width)<br />       (i+1).times { pattern.push(colors[2]) }<br />       (width-i-1).times { pattern.push(colors[1]) }<br />     <span class="keyword">end</span><br /><br />     pattern<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>You pass this method an Array of three colors and a width for a full band of color.  It begins by fading the first color into the second by iteratively adding thinner and thinner lines to the gradient pattern.  It then repeats the process in reverse to fade the second color into the third.</p>
+			<p>Justin's blankets also include solid color bands created by the following method:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> create_solid(colors, width)<br />     pattern = []<br />     <span class="keyword">for</span> color <span class="keyword">in</span> colors<br />       width.times { pattern.push(color) }<br />     <span class="keyword">end</span><br />     pattern<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This methods works exactly like create_gradient() except there's no blending of colors.</p>
+			<p>With the pieces to create the structure in place, we are now ready for some rendering code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> draw_ascii(pattern, width)<br />     <span class="keyword">for</span> i <span class="keyword">in</span> 0...(pattern.size-width+1)<br />       puts pattern.slice(i, width).join<br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>As you can see, generating the ASCII output is trivial.  The long pattern is simply divided into a moving window of width slices.  Each slice is then printed as one row of output.</p>
+			<p>RMagick rendering takes a little more work, but still isn't hard:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    require <span class="string">'RMagick'</span><br />    include Magick<br /><br />    <span class="keyword">def</span> draw(filename, pattern, width, height)<br />     canvas = Magick::ImageList.new<br />     canvas.new_image(width, height, Magick::HatchFill.new(<span class="string">'white'</span>, <span class="string">'white'</span>))<br />     pts = Magick::Draw.new<br /><br />     <span class="keyword">for</span> y <span class="keyword">in</span> 0... height<br />       line = pattern.slice(y, width)<br /><br />       x = 0<br />       <span class="keyword">for</span> color <span class="keyword">in</span> line<br />         pts.fill(color)<br />         pts.point(x, y)<br />         x = x + 1<br />       <span class="keyword">end</span><br />     <span class="keyword">end</span><br /><br />     pts.draw(canvas)<br />     canvas.write(filename)<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method begins by preparing a canvas on which it can draw points.  From there it does the same looping over the pattern we saw earlier, but this time points are plotted on the canvas.  When all the marks have been made, the image is flushed to a file on the disk.</p>
+			<p>The last bit of code puts the generators and renderers to work:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br />    draw_ascii(create_gradient([<span class="string">'R'</span>, <span class="string">'B'</span>, <span class="string">'Y'</span>]), 28)<br /><br />    mex_flag = create_solid([<span class="string">'rgb(0, 64, 0)'</span>, <span class="string">'white'</span>, <span class="string">'red'</span>], 5)<br />    border = create_solid([<span class="string">'rgb(0, 64, 0)'</span>], 25)<br /><br />    pattern = create_gradient([<span class="string">'red'</span>, <span class="string">'blue'</span>, <span class="string">'yellow'</span>])<br />    pattern = pattern + mex_flag<br />    pattern = pattern + border<br />    pattern = pattern + create_gradient([<span class="string">'black'</span>, <span class="string">'red'</span>, <span class="string">'orange'</span>])<br />    pattern = pattern + border<br />    pattern = pattern + mex_flag.reverse<br />    pattern = pattern + create_gradient([<span class="string">'red'</span>, <span class="string">'purple'</span>, <span class="string">'black'</span>], 8)<br />    draw(<span class="string">"mexican_blanket.jpg"</span>, pattern, 100, 200)<br /><br /></div></div>
+			<p>You can see here that the ASCII renderer is fed a trivial pattern created from a single gradient.  The pattern built for the image file is more complex, combining several different patterns.  In both cases though, it's a single call to the drawing routines we examined above to show results.</p>
+			<p>My thanks to all the weavers.  I'll bet you never knew you had such a talent for fabric.</p>
+			<p>Tomorrow we will try some non-traditional arithmetic...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255006">Harry Kakueki</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255010">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255011">Harry Kakueki (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255015">Will Bailey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255022">darren kirby</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255023">Andreas Launilla</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255024">Jesse Edelstein</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255033">Jesse Edelstein (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255037">Jesse Merriman (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255048">Ruben Medellin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255054">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255061">Stephen Ball</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255139">steve</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255230">Jesse Merriman (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255248">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/255356">Ivo Dancet</a></li>
+			</ol>
+			<p><a href="quiz127_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

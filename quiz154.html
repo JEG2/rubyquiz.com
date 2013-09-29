@@ -1,0 +1,104 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Making Change (#154)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Making Change (#154)</span>
+			<p>In "Practical Ruby Projects," the author includes a couple of chapters involving coin simulations.  These simulators are used to explore the possibilities of replacing a certain coin or adding a new coin.</p>
+			<p>One interesting subproblem of these simulations is that of making change.  For example, if we need to give 39 cents change in the United States (where there are 25, 10, 5, and 1 cent pieces), we can give:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; make_change(39)<br />    =&gt; [25, 10, 1, 1, 1, 1]<br /><br /></div></div>
+			<p>What if the coins were 10, 7, and 1 cent pieces though and we wanted to make 14 cents change?  We would probably want to do:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; make_change(14, [10, 7, 1])<br />    =&gt; [7, 7]<br /><br /></div></div>
+			<p>This week's Ruby Quiz is to complete a change making function with this skeleton:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> make_change(amount, coins = [25, 10, 5, 1])<br /><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Your function should always return the optimal change with optimal being the least amount of coins involved.  You can assume you have an infinite number of coins to work with.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>One submitter commented that our solutions were pretty complex.  The reason for that is that we all sat around dreaming up pathological edge cases that took a long time to solve without some complex code.  The good news is that such cases don't generally come up in the day to day change making of most countries.</p>
+			<p>Let's begin with a peek at a non-complicated solution from Ilan Berci:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> make_change(amount, coins = [25,10,5,1])<br />      coins.sort.<br />            reverse.<br />            map{|coin| f = amount/coin; amount %= coin; Array.new(f){coin} }.<br />            flatten<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This approach uses a greedy algorithm.  We call it greedy because it always tries to move as close to the end result as possible with each step.  In this particular case, that is accomplished by working from the biggest coins to the smallest and always grabbing as many of each type of coin as possible without going over our limit.</p>
+			<p>This technique is trivial and it works for all change made in the U.S., plus many other countries.  It doesn't work for the fictional second test case given in the quiz though, returning [10, 1, 1, 1, 1].</p>
+			<p>That's where the complexity began to creep in.</p>
+			<p>If we're going to get right answers for any combination of coins, we will have to search all possible combinations.  Doing that for certain sets of coins can take a long time and we would really rather it be fast.  To get speed we will have to use something smarter than a brute force algorithm that checks all the combinations.</p>
+			<p>Before I show the smarter approaches though, it's important to note that you likely wouldn't need to be this clever to make change in any country.  The reason is simple:  we don't usually give change for large amounts since we tend to just use non-coin funds for that.  That keeps the search space small enough that advanced techniques aren't too important.  Of course, it's still fun to explore the possibilities.</p>
+			<p>This problem actually turns out to be famous in computer science.  It's called the Knapsack Problem.  Once you know that you can apply the techniques often used on that problem, the most popular of which is to use a dynamic programming algorithm.  ("Dynamic programming" has a different meaning here than we often use in Ruby circles about code writing code.)</p>
+			<p>The trick to a dynamic programming algorithm is to remember the smaller pieces of a bigger problem once we've figured them out and reuse them as much as possible without having to repeat the work.  You can do that while working your way up to a solution or down from a solution, but the top-down approach, often called memoization, is pretty popular.</p>
+			<p>Here's some code from Carl Porth that implements simple memoization using a Hash:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> make_change(amount, coins = [25, 10, 5, 1])<br />     coins.sort! { |a, b| b &lt;=&gt; a }<br /><br />     <span class="comment"># memoize solutions</span><br />     optimal_change = Hash.new <span class="keyword">do</span> |hash, key|<br />       hash[key] = <span class="keyword">if</span> key &lt; coins.min<br />         []<br />       <span class="keyword">elsif</span> coins.include?(key)<br />         [key]<br />       <span class="keyword">else</span><br />         coins.<br />           <span class="comment"># prune unhelpful coins</span><br />           reject { |coin| coin &gt; key }.<br /><br />           <span class="comment"># prune coins that are factors of larger coins</span><br />           inject([]) {|mem, var| mem.any? {|c| c%var == 0} ? mem : mem+[var]}.<br /><br />           <span class="comment"># recurse</span><br />           map { |coin| [coin] + hash[key - coin] }.<br /><br />           <span class="comment"># prune unhelpful solutions</span><br />           reject { |change| change.sum != key }.<br /><br />           <span class="comment"># pick the smallest, empty if none</span><br />           min { |a, b| a.size &lt;=&gt; b.size } || []<br />       <span class="keyword">end</span><br />     <span class="keyword">end</span><br /><br />     optimal_change[amount]<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>First, have a look at the structure of this code.  It doesn't really seem to do much from the outside.  It sort!()s the coins from biggest to smallest, defines a Hash, and indexes into the Hash to magically come up with the answer.  The magic is in the definition of the Hash.</p>
+			<p>To understand how this works, you just have to think of the main problem in smaller slices.  Say we want to make 39 cents of change with U.S. coins.  Here's how the problem breaks down:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">                  make_change(39)<br />    [25]        + make_change(39 - 25)<br />    [25, 10]    + make_change(39 - 25 - 10)<br />    [25, 10, 1] + make_change(39 - 25 - 10 - 1)<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Carl's magic Hash does exactly this process.  Have a look at this line of code plucked from the middle of the Hash definition:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">           <span class="comment"># ...</span><br /><br />           <span class="comment"># recurse</span><br />           map { |coin| [coin] + hash[key - coin] }.<br /><br />           <span class="comment"># ...</span><br /><br /></div></div>
+			<p>That's the exact pattern I showed above.</p>
+			<p>The memoization part is basically automatic here, thanks to how Ruby's Hash works.  When you provide a default block to the constructor like this, it will be called the first time some key is accessed that the Hash doesn't know.  That block can assign a value for the key though, as Carl does in this code, and then all future attempts to access the same key are a simple Hash lookup (bypassing all of the work in the block).  That makes sure that once we have found some coin combination, we never have to find it again.</p>
+			<p>What are all the rest of those lines in Carl's solution though?  Pruning.  That's the other trick for getting speed when searching a big space.  Throw out everything you possibly can to make the work as small as possible.  Carls throws out coins that are bigger than the current amount remaining, coins that are factors of larger coins we could use, and change combinations that don't add up to what we need.  This makes for less work and makes the code go faster.</p>
+			<p>Paolo Bonzini submitted another dynamic programming approach that was one of the faster solutions we saw.  It's a bottom-up approach in contrast to the memoization we just saw.  It prunes the space, orders the combinations checked to find smaller counts faster, and avoids building a bunch of coin Arrays as it works (Ruby's GC will slow you down when it kicks in).  Eric I. submitted a small enhancement to the code that made it even faster.  The downside of all this is that it's a little harder still to follow.</p>
+			<p>Let's see how that modified version works:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> make_change(a, list = [25, 10, 5, 1])<br />     <span class="keyword">return</span> <span class="keyword">nil</span> <span class="keyword">if</span> a &lt; 0<br />     <span class="keyword">return</span> <span class="keyword">nil</span> <span class="keyword">if</span> a != a.floor<br /><br />     parents = Array.new(a + 1)<br />     parents[0] = 0<br />     worklist = [[0, 0]]<br />     <span class="keyword">while</span> parents[a].nil? &amp;&amp; !worklist.empty? <span class="keyword">do</span><br />       base, starting_index = worklist.shift<br />       starting_index.upto(list.size - 1) <span class="keyword">do</span> |index|<br />         coin = list[index]<br />         tot = base + coin<br />         <span class="keyword">if</span> tot &lt;= a &amp;&amp; parents[tot].nil?<br />           parents[tot] = base<br />           worklist &lt;&lt; [tot, index]<br />         <span class="keyword">end</span><br />       <span class="keyword">end</span><br />     <span class="keyword">end</span><br /><br />     <span class="keyword">return</span> <span class="keyword">nil</span> <span class="keyword">if</span> parents[a].nil?<br />     result = []<br />     <span class="keyword">while</span> a &gt; 0 <span class="keyword">do</span><br />       parent = parents[a]<br />       result &lt;&lt; a - parent<br />       a = parent<br />     <span class="keyword">end</span><br />     result.sort!.reverse!<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The main work here is done in the second chunk of code and to break that down, you need to know two things.  First, the parents Array holds values at the index of a given amount for the previously used total.  That sounds a lot more complicated than it is.  For example, in the make_change(11, [10, 1]) call, parents ends up looking like this:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    [0, 0, <span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="keyword">nil</span>, <span class="keyword">nil</span>, 0, 10]<br /><br /></div></div>
+			<p>It may not look like it, but the answer is hidden in there!  To find it, you start at the desired total (as an index) parents[11].  That's 10, which is the previous total.  So, to find the last coin, we can just subtract them which gives us the 1.  Then we move to that previous amount at parents[10].  That's a zero and subtracting again gives us 10, the other coin needed.  This process I just described is exactly what the third chunk of code does after a solution has been found in the second chunk.</p>
+			<p>The second thing you need to understand is how it searches for solutions.  Essentially, the worklist Array holds the progress so far.  Each bit of work in there is shift()ed off, added to, and appended back on to the end if there's more work to do.  This is the classic pattern for unrolling recursion into an iterative solution.</p>
+			<p>Now each piece of work in worklist is the total we are currently on, plus an index for the last coin added.  The total we are currently on represents the work we need to do.  We can add coins to that to find new totals.  The index for the last coin added just keeps us from repeating work by checking larger coins than we've already covered.  (This solution assumes the coins are in order from biggest to smallest.)  That's one example of the pruning done here.  The other is the if conditional that only adds work below the desired total.</p>
+			<p>It's important to think about how using a queue works here.  First it will hold a single zero coin total at the front.  In processing that, one coin totals will be added onto the back.  When we reach those, the code will begin to add two coin totals.  This means we are performing a breadth-first search from the smallest coin count solutions to the largest.  This ensures that the first right answer we see is the best and saves us any needless work.</p>
+			<p>My thanks to all who worked so hard to make sure we can quickly calibrate absurd sums of change.  I'm sure we are collectively eliminating the need for paper money thanks to our fun and games.</p>
+			<p>Tomorrow we will tackle a current hot topic in the Ruby community...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288792">Ilan Berci</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288793">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288794">Paolo Bonzini</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288795">Dominik Honnef</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288796">Denis Hennessy</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288798">JJ</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288799">Yoan Blanc</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288800">Thomas</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288803">Sander Land</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288806">Phrogz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288807">Douglas A. Seifert</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288808">Ilan Berci (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288810">Randall Potter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288811">Phrogz (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288814">Jes&uacute;s Gabriel y Gal&aacute;n</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288815">Thomas (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288816">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288819">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288821">Philipp Hofmann</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288825">jonty</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288827">Eric I. (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288834">Martin L&uuml;dtke</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288884">Sergey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288898">Thomas (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288840">Clark Grubb</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288856">Alexander Stedile</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288902">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288938">Felipe Giotto</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288941">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/288990">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/289004">Jes&uacute;s Gabriel y Gal&aacute;n (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/289072">Atsuhiro Teshima</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/289128">Alex Shulgin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/289149">Raffa</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/289213">Ian Evans</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/289262">James Bracy</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/289305">Amey Dhoke</a></li>
+			</ol>
+			<p><a href="quiz154_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

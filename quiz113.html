@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - One-Liners (#113)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">One-Liners (#113)</span>
+			<p>This week's Ruby Quiz is in pop quiz format.  For each of the scenarios below, send in a one line (80 characters or less) solution that performs the task.  You may use any legal Ruby syntax including require statements and semicolons, but the goal in finesse more than golfing.</p>
+			<p>Any input described in the problem is in a local variable called quiz.  Assigning to this variable is assumed to have happened earlier in the program and is not part of your submitted solution.</p>
+			<p>Your line just needs to evaluate to the expected result.  You do not have to store the result in a variable or create any output.</p>
+			<p>Any edge cases not covered by the provided examples are left to your best judgement.</p>
+			<p>* Given a Numeric, provide a String representation with commas inserted between each set of three digits in front of the decimal.  For example, 1999995.99 should become "1,999,995.99".</p>
+			<p>* Given a nested Array of Arrays, perform a flatten()-like operation that removes only the top level of nesting.  For example, [1, [2, [3]]] would become [1, 2, [3]].</p>
+			<p>* Shuffle the contents of a provided Array.</p>
+			<p>* Given a Ruby class name in String form (like "GhostWheel::Expression::LookAhead"), fetch the actual class object.</p>
+			<p>* Insert newlines into a paragraph of prose (provided in a String) so lines will wrap at 40 characters.</p>
+			<p>* Given an Array of String words, build an Array of only those words that are anagrams of the first word in the Array.</p>
+			<p>* Convert a ThinkGeek t-shirt slogan (in String form) into a binary representation (still a String).  For example, the popular shirt "you are dumb" is actually printed as:</p>
+			<p class="example">111100111011111110101<br />110000111100101100101<br />1100100111010111011011100010</p>
+			<p>* Provided with an open File object, select a random line of content.</p>
+			<p>* Given a wondrous number Integer, produce the sequence (in an Array).  A wondrous number is a number that eventually reaches one, if you apply the following rules to build a sequence from it.  If the current number in the sequence is even, the next number is that number divided by two.  When the current number is odd, multiply that number by three and add one to get the next number in the sequence.  Therefore, if we start with the wondrous number 15, the sequence is [15, 46, 23, 70, 35, 106, 53, 160, 80, 40, 20, 10, 5, 16, 8, 4, 2, 1].</p>
+			<p>* Convert an Array of objects to nested Hashes such that %w[one two three four five] becomes {"one" =&gt; {"two" =&gt; {"three" =&gt; {"four" =&gt; "five"}}}}.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>If you followed the solutions of this quiz you should have seen a little bit of everything.  We saw clever algorithms, Ruby idioms, some golfing, and even a mistake or two.  Follow along and I'll give you the highlights.</p>
+			<p>The problems of adding commas to numbers, shuffling Arrays, and resolving class names were selected because I see them pretty regularly on Ruby Talk.  Because of that, I figured most of us would know those idioms pretty well.  There were a couple of surprises though, so I'm glad I decided to include them.</p>
+			<p>For adding commas to numbers, several of us used some variant of a pretty famous reverse(), use a regular expression, and reverse() trick.  Here's one such solution by Carl Porth:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.to_s.reverse.scan(<span class="string">/(?:\d*\.)?\d{1,3}-?/</span>).join(<span class="string">','</span>).reverse<br /><br /></div></div>
+			<p>I've always liked this problem and this trick to solve it, because it reminds me of one of my favorite rules of computing:  when you're hopelessly stuck, reverse the data.  I can't remember who taught me that rule now and I have no earthly idea why it works, but it sure helps a lot.</p>
+			<p>Take this problem for example.  You need to find numbers in groups of three and it's natural to turn to regular expressions for this.  If you attack the data head-on though, it's a heck of a problem.  The left-most digit group might be one, two, or three long, and you have to be aware of that decimal that ends processing.  It's a mess, but one call to reverse() cleans it right up.</p>
+			<p>Now the decimal will be before the section we want to work with and, as we see in Carl's code, you can skip right over it.  From there the digit groups will line up perfectly as long as you always try to greedily grab three or less.  Carl's code does this, picking the String apart with scan() and then join()ing the groups with added commas.  I think it's clever, elegant, and Rubyish.</p>
+			<p>I'm serious about that reverse()ing the data trick too.  Try it out next time you are struggling.</p>
+			<p>Shuffling Arrays surprised me.  More that one person sent in:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.sort{rand}<br /><br /></div></div>
+			<p>Yikes!</p>
+			<p>Does that even work?  Let's ask IRb:</p>
+			<p class="example">&gt;&gt; quiz = (1..10).to_a<br />=&gt; [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]<br />&gt;&gt; quiz.sort{rand}<br />=&gt; [10, 6, 1, 7, 3, 8, 5, 9, 4, 2]<br />&gt;&gt; quiz.sort{rand}<br />=&gt; [10, 6, 1, 7, 3, 8, 5, 9, 4, 2]<br />&gt;&gt; quiz.sort{rand}<br />=&gt; [10, 6, 1, 7, 3, 8, 5, 9, 4, 2]<br />&gt;&gt; quiz.sort{rand}<br />=&gt; [10, 6, 1, 7, 3, 8, 5, 9, 4, 2]<br />&gt;&gt; quiz.sort{rand}<br />=&gt; [10, 6, 1, 7, 3, 8, 5, 9, 4, 2]</p>
+			<p>That's not looking too random to me.</p>
+			<p>Let's think about this.  What does the above code do.  sort() compares elements of the Array, arranging them based on the returned result.  We are suppose to return a result of -1, 0, or 1 to indicate how the elements compare.  However, rand() returns a float between 0.0 and 1.0.  Ruby considers anything over 0.0 to be the 1 response, so most of the rand calls give this.  You can get a 0.0 result from time to time, but it will be a loner in a sea of 1s.</p>
+			<p>So what is the above code actually trying to do?  It's trying to compare a selection of random numbers and sort on that instead.  Writing the process out longhand it is:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.map { |e| [rand, e] }.sort.map { |arr| arr.last }<br /><br /></div></div>
+			<p>We change the elements into Arrays of random numbers and the element itself.  We then sort() those.  Arrays compare themselves element by element, so they will always start by comparing the random numbers.  Then we just drop the random numbers back out of the equation.</p>
+			<p>Luckily, Ruby has a shorthand version of this process, known as the Schwartzian Transform:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.sort_by { rand }<br /><br /></div></div>
+			<p>That's the popular Ruby idiom for randomizing an Array.  Make sure you use sort_by() instead of sort() when that's your intent.</p>
+			<p>Resolving class names is a surprisingly complex issue.  Classes can be nested inside other classes and modules, as the quiz example showed.  Inside that nested scope we don't need to use the full name of the constant either.  Finally, don't forget things like autoload()ing and const_missing() which further complicate the issue.</p>
+			<p>I'll probably get hate mail for this, but if you want to handle all of those cases with one easy bit of code I recommend this "cheating" solution from Phrogz:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    eval(quiz)<br /><br /></div></div>
+			<p>This asks Ruby to lookup the constant(s) and she will always remember to handle all of the edge cases for us.  I know we always say eval() is evil and you should avoid it, but this instance can be one of the exceptions, in my opinion.  Of course, you must sanitize the input if you are taking it from a user to ensure they don't sneak in any scary code, but even with that added overhead it's still easier and more accurate than trying to do all the work yourself.</p>
+			<p>If you just can't get over the eval() call though, you can use something like:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.split(<span class="string">"::"</span>).inject(Object) { |par, const| par.const_get(const) }<br /><br /></div></div>
+			<p>This doesn't address all of the edge cases, but it often works as long as you are working with fully qualified names.</p>
+			<p>Skipping ahead a bit, let's talk about the last three questions in the quiz.  First, reading a random line from a file.  This one is just a fun algorithm problem.  Alex Young offered this solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    (a=quiz.readlines)[rand(a.size)]<br /><br /></div></div>
+			<p>That pulls all the lines into an Array and randomly selects one.  You can even eliminate the assignment to the Array as Aleksandr Lossenko does:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.readlines[rand(quiz.lineno)]<br /><br /></div></div>
+			<p>Same thing, but here we get the line count from the File object and thus don't need a local variable.</p>
+			<p>The problem with both of these solutions is when we run them on a very large file.  Slurping all of that data into memory may prove to be too much.</p>
+			<p>You could do it without slurping by reading the File twice.  You could read the whole File to get a line count, choose a random line, then read back to that line.  That's too much busy work though.</p>
+			<p>There is an algorithm for reading the File just once and coming out of it with a random line.  I sent the Ruby version of this algorithm in as my solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.inject { |choice, line| rand &lt; 1/quiz.lineno.to_f ? line : choice }<br /><br /></div></div>
+			<p>The trick is to select a line by random chance, based on the number of lines we've read so far.  The first line we will select 100% of the time.  50% of the time we will then replace it with the second line.  33.3% of the time we will replace that choice with the third line.  Etc.  The end result will be that we have fairly selected a random line just by reading through the File once.</p>
+			<p>The wondrous number problem was more an exploration of Ruby's syntax than anything else.  I used:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    Hash.new { |h, n| n == 1 ? [1] : [n] + h[n % 2 == 0 ? n/2 : n*3+1] }[quiz]<br /><br /></div></div>
+			<p>This is really an abuse of Ruby's Hash syntax though.  I don't ever actually store the values in the Hash since that would be pointless for this problem.  Instead I am using a Hash as a nested lambda(), clarified by this translation from Ken Bloom:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    (h=lambda {|n| n==1 ? [1] : [n] + h[n%2 == 0 ? n/2 : n*3+1] })[quiz]<br /><br /></div></div>
+			<p>A solution to this problem probably belongs on more than one line though as these both feel like golfing to me.  I liked this two step offering from Aleksandr Lossenko:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    a=[quiz]; a &lt;&lt; (a.last%2==1 ? a.last*3+1 : a.last/2) <span class="keyword">while</span> a.last!=1<br /><br /></div></div>
+			<p>The final question, about nested Hashes, is actually what inspired me to make this quiz.  The question was raised recently on the Ruport mailing list and it took Gregory Brown and myself working together a surprising amount of time to land on a solution just like this one from Carl Porth:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    quiz.reverse.inject { |mem, var| {var =&gt; mem} }<br /><br /></div></div>
+			<p>Those of you who figured that out quickly deserve a pat on the back.  You are smarter than me.</p>
+			<p>Again we see my favorite trick of reverse()ing the data.  This time though, the mental block for me was figuring out that it's easier if you don't initialize the inject() block.  This causes inject() to start the mem variable as the first String in the Array, eliminating the lone-entry edge case.  The problem is trivial from there, but that was a counter-intuitive leap for my little brain.</p>
+			<p>I'll leave you to glance over the other four problems on your own, but do give them a look.  There was no shortage of great material this week.</p>
+			<p>My thanks to all of you who just couldn't stop fiddling with these problems, generating great ideas all the while.  Yes, I'm talking to you Robert and Ken.</p>
+			<p>Tomorrow we've got a problem for all you Bingo nuts out there...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238616">Phrogz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238625">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238627">Louis J Scoras</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238642">Chris Shea</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238643">Jamie Macey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238651">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238652">Ken Bloom (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238657">Sharon Phillips</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238666">Ken Bloom (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238688">Luke Ivers</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238690">Aleksandr Lossenko</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238691">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238692">Alex Young</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238693">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238755">Robert Dober (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238760">Eric I.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238762">Robert Dober (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238765">Luke Ivers (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238797">Krishna Dole</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238854">Robert Dober (4)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238911">Bruno Michel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/238972">Ken Bloom (4)</a></li>
+			</ol>
+			<p><a href="quiz113_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

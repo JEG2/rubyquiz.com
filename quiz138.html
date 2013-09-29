@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Count and Say (#138)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Count and Say (#138)</span>
+			<p>by Martin DeMello</p>
+			<p>Conway's "Look and Say" sequence (http://en.wikipedia.org/wiki/Look-and-say_sequence) is a sequence of numbers in which each term "reads aloud" the digits of the previous term. For instance, the canonical L&amp;S sequence starts off 1, 11, 21, 1211, 111221, ..., because:</p>
+			<p class="example">* 1 is read off as "one 1" or 11.<br />* 11 is read off as "two 1's" or 21.<br />* 21 is read off as "one 2, then one 1" or 1211.<br />* 1211 is read off as "one 1, then one 2, then two 1's" or 111221.<br />* 111221 is read off as "three 1, then two 2, then one 1" or 312211.</p>
+			<p>Over on rec.puzzles, Eric A. proposed a variant in which the letters of a sentence are grouped, then "counted aloud", omitting the "s"s for the plural form. Thus, seeding the sequence with "LOOK AND SAY", we get:</p>
+			<p class="example">0. LOOK AND SAY<br />1. TWO A ONE D ONE K ONE L ONE N TWO O ONE S ONE Y<br />2. ONE A ONE D SIX E ONE K ONE L SEVEN N NINE O ONE S TWO T TWO W ONE Y<br />3. ONE A ONE D TEN E TWO I ONE K ONE L TEN N NINE O THREE S THREE T ONE V<br />   THREE W ONE X ONE Y</p>
+			<p>and so on. (Note the difference between this and the L&amp;S sequence--the letters are counted rather than read in order). Eric wants to know when the sequence enters a cycle, and how long that cycle is. Well?</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>If you'll permit a brief diversion, this solution to the Look and Say problem from Simon Kröger is worth a look:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> String<br />      <span class="keyword">def</span> look_and_say<br />        gsub(<span class="string">/(.)\1*/</span>){|s| <span class="string">"#{s.size}#{s[0,1]}"</span>}<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    s = <span class="string">'1'</span><br />    12.times {p s; s = s.look_and_say}<br /><br /></div></div>
+			<p>As you can see, the bulk of the work here is done by a single regular expression.  The pattern matches any non-newline character, followed by a run of zero or more of the exact same character.  Replacing those matches with a count of the matched run followed by that first unique character will generate a single step in the sequence.  Wrap that in an iterator, like the times() call here, and you have yourself a complete solution.</p>
+			<p>I thought that was pretty slick and just wanted to make sure we all got a good look at it.  On to the actual quiz problem.</p>
+			<p>Solving Count and Say is really just two steps:</p>
+			<p class="example">1.  Translating the counts to English words<br />2.  Iterating over the transformations while watching for a repeated pattern</p>
+			<p>The first step has come up in the Ruby Quiz a couple of times now.  See the English Numerals for the first time this challenge came up.</p>
+			<p>This occurrence was almost identical to previous showings.  Everyone argues about the correct way to translate the numbers and then steals Glenn Parker's solution to Ruby Quiz #25.  I'll spare you covering that material again and just recommend you have a look back at that quiz.</p>
+			<p>Ironically, that turns out to be the harder part of this quiz, with step two being pretty easy to whip up.</p>
+			<p>Let's examine are the relevant pieces of Gavin Kistner's code.  First, we have some extensions to the core classes:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">module</span> Enumerable<br />      <span class="keyword">def</span> item_counts<br />        inject( Hash.new(0) ){ |counts, item|<br />          counts[ item ] += 1<br />          counts<br />        }<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">class</span> String<br />      <span class="keyword">def</span> look_and_say<br />        counts = upcase.scan( <span class="string">/[A-Z]/</span> ).item_counts<br />        counts.keys.sort.map{ |letter|<br />          <span class="string">"#{counts[letter].to_english.upcase} #{letter}"</span><br />        }.join( <span class="string">' '</span> )<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># Code courtesy of Glenn Parker in Ruby Quiz #25</span><br />    <span class="keyword">class</span> Integer<br />       <span class="comment"># ...</span><br /><br />       <span class="keyword">def</span> to_english<br />         <span class="comment"># ...</span><br />       <span class="keyword">end</span><br /><br />       <span class="comment"># ...</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The extension to Enumerable is a simple counter of items.  It creates and returns a Hash where the keys are unique items within the Enumerable object and the values are the counts for how many times that item occurs.</p>
+			<p>The method added to String handles steps in the Count and Say sequence just as we saw Simon do earlier for Look and Say.  In this version, scan() is used to locate the letters which are transformed into the count Hash we just examined.  The code then walks the letters in sort()ed order adding the count and letter to the result.  The count is converted to an English word before it lands in the String using Glen's code.</p>
+			<p>The rest of the problem is just locating the repeating sequence:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    SEED = <span class="string">"LOOK AND SAY"</span><br /><br />    <span class="comment"># ...</span><br /><br />    str = SEED<br />    strs_seen = {}<br />    0.upto( 9999 ){ |i|<br />      puts <span class="string">"%4d. %s"</span> % [ i, str ]<br />      <span class="keyword">if</span> last_seen_on = strs_seen[ str ]<br />        print <span class="string">"Cycle from #{i-1} back to #{last_seen_on}"</span><br />        puts  <span class="string">" (#{i - last_seen_on} lines in cycle)"</span><br />        <span class="keyword">break</span><br />      <span class="keyword">else</span><br />        strs_seen[ str ] = i<br />      <span class="keyword">end</span><br />      str = str.look_and_say<br />    }<br /><br /></div></div>
+			<p>This code runs in a loop with a counter for two reasons.  First, we may need to protect ourselves from too much looping, in case the pattern never repeats or doesn't start repeating for a very long time.  The other reason is that it allows us to track where the repetition begins and how long each cycle is.</p>
+			<p>The if statement is what actually detects the duplicate.  On all iterations, save the last one, the else branch just adds the current phrase to a seen Hash.  This has phrases for the key and the iteration count where they appeared as the value.  When a duplicate comes up, the if branch will run, printing the collected statistics and ending the iteration.</p>
+			<p>It's really just that simple.</p>
+			<p>My thanks to all who answered this random question form the wild.  It's funny that those can be so much fun.</p>
+			<p>Tomorrow we will tackle a simple problem, but flex our programmer muscles by trying to solve it as efficiently as possible...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268276">Mark Thomas</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268286">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268289">Brad Ediger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268296">John Baylor</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268330">Josef 'Jupp' Schugt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268360">Eugene Kalenkovich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268431">Gavin Kistner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268434">Gavin Kistner (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268483">Krishna Dole</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268484">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268508">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268523">Rub&eacute;n Medell&iacute;n</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268696">Ivan Zdravkovic</a></li>
+			</ol>
+			<p><a href="quiz138_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

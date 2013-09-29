@@ -1,0 +1,91 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - LCD Numbers (#14)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">LCD Numbers (#14)</span>
+			<p>This week's quiz is to write a program that displays LCD style numbers at adjustable sizes.</p>
+			<p>The digits to be displayed will be passed as an argument to the program.  Size should be controlled with the command-line option -s follow up by a positive integer.  The default value for -s is 2.</p>
+			<p>For example, if your program is called with:</p>
+			<p class="example">&gt; lcd.rb 012345</p>
+			<p>The correct display is:</p>
+			<p class="example"> --        --   --        -- <br />|  |    |    |    | |  | |   <br />|  |    |    |    | |  | |   <br />           --   --   --   -- <br />|  |    | |       |    |    |<br />|  |    | |       |    |    |<br /> --        --   --        -- </p>
+			<p>And for:</p>
+			<p class="example">&gt; lcd.rb -s 1 6789</p>
+			<p>Your program should print:</p>
+			<p class="example"> -   -   -   - <br />|     | | | | |<br /> -       -   - <br />| |   | | |   |<br /> -       -   - </p>
+			<p>Note the single column of space between digits in both examples. For other values of -s, simply lengthen the - and | bars.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Clearly this problem isn't too difficult.  As we've now seen, it can be solved in under 300 bytes.  However, this classic challenge does address topics like scaling and joining multiline data that are applicable to many areas of computer programming.  That always makes for an interesting quiz in my book.</p>
+			<p>There were three main strategies used for solving the problem.  Some used a template approach, where you have some kind of text representation of your number at a scale of one.  Two might look like this, for example:</p>
+			<p class="example">[ " - ",<br />  "  |",<br />  " - ",<br />  "|  ",<br />  " - " ]</p>
+			<p>Scaling that to any size is a two-fold process.  First, you need to stretch it horizontally.  The easy way to do that is to grab the second character of each string (a "-" or a " ") and repeat it -s times:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    digit.each { |row| row[1, 1] = row[1, 1] * scale }<br /><br /></div></div>
+			<p>After that, the digit needs to be scaled vertically.  That's pretty easy to do while printing it out, if you want.  Just print any line containing a "|" -s times:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    digit.each <span class="keyword">do</span> |row|<br />        <span class="keyword">if</span> row =~ <span class="string">/\|/</span><br />            scale.times { puts row }<br />        <span class="keyword">else</span><br />            puts row<br />        <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The second strategy used was to treat each digit as a series of segments that can be "on" or "off".  The numbers easily break down into seven positions:</p>
+			<p class="example"> 6<br />5 4<br /> 3<br />2 1<br /> 0</p>
+			<p>Using that map, we can convert the two above to a binary digit, and some did:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    0b1011101<br /><br /></div></div>
+			<p>Expansion of these representations is handled much as it was in the first strategy above.</p>
+			<p>With either method, you will need to join the scaled digits together for output.  This is basically a two dimensional join() problem.  Building a routine like that is simple using either Array.zip() or Array.transpose().  (See the submissions for numerous examples of this.)</p>
+			<p>The third strategy caught my eye, so I'll examine it here.  Let's look at the primary class of Dale Martenson's solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> LCD<br />       attr_accessor( :size, :spacing )<br /><br />       <span class="comment">#</span><br />       <span class="comment"># This hash is used to define the segment display for the</span><br />       <span class="comment"># given digit. Each entry in the array is associated with</span><br />       <span class="comment"># the following states:</span><br />       <span class="comment">#</span><br />       <span class="comment">#    HORIZONTAL</span><br />       <span class="comment">#    VERTICAL</span><br />       <span class="comment">#    HORIZONTAL</span><br />       <span class="comment">#    VERTICAL</span><br />       <span class="comment">#    HORIZONTAL</span><br />       <span class="comment">#    DONE</span><br />       <span class="comment">#</span><br />       <span class="comment"># The HORIZONTAL state produces a single horizontal line. There</span><br />       <span class="comment"># are two types:</span><br />       <span class="comment">#</span><br />       <span class="comment">#    0 - skip, no line necessary, just space fill</span><br />       <span class="comment">#    1 - line required of given size</span><br />       <span class="comment">#</span><br />       <span class="comment"># The VERTICAL state produces a either a single right side line,</span><br />       <span class="comment"># a single left side line or a both lines.</span><br />       <span class="comment">#</span><br />       <span class="comment">#    0 - skip, no line necessary, just space fill</span><br />       <span class="comment">#    1 - single right side line</span><br />       <span class="comment">#    2 - single left side line</span><br />       <span class="comment">#    3 - both lines</span><br />       <span class="comment">#</span><br />       <span class="comment"># The DONE state terminates the state machine. This is not needed</span><br />       <span class="comment"># as part of the data array.</span><br />       <span class="comment">#</span><br />       <span class="variable">@@lcdDisplayData</span> = {<br />           <span class="string">"0"</span> =&gt; [ 1, 3, 0, 3, 1 ],<br />           <span class="string">"1"</span> =&gt; [ 0, 1, 0, 1, 0 ],<br />           <span class="string">"2"</span> =&gt; [ 1, 1, 1, 2, 1 ],<br />           <span class="string">"3"</span> =&gt; [ 1, 1, 1, 1, 1 ],<br />           <span class="string">"4"</span> =&gt; [ 0, 3, 1, 1, 0 ],<br />           <span class="string">"5"</span> =&gt; [ 1, 2, 1, 1, 1 ],<br />           <span class="string">"6"</span> =&gt; [ 1, 2, 1, 3, 1 ],<br />           <span class="string">"7"</span> =&gt; [ 1, 1, 0, 1, 0 ],<br />           <span class="string">"8"</span> =&gt; [ 1, 3, 1, 3, 1 ],<br />           <span class="string">"9"</span> =&gt; [ 1, 3, 1, 1, 1 ]<br />       }<br /><br />       <span class="variable">@@lcdStates</span> = [<br />           <span class="string">"HORIZONTAL"</span>,<br />           <span class="string">"VERTICAL"</span>,<br />           <span class="string">"HORIZONTAL"</span>,<br />           <span class="string">"VERTICAL"</span>,<br />           <span class="string">"HORIZONTAL"</span>,<br />           <span class="string">"DONE"</span><br />       ]<br /><br />       <span class="keyword">def</span> initialize( size=1, spacing=1 )<br />           <span class="variable">@size</span> = size<br />           <span class="variable">@spacing</span> = spacing<br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> display( digits )<br />           states = <span class="variable">@@lcdStates</span>.reverse<br />           0.upto(<span class="variable">@@lcdStates</span>.length) <span class="keyword">do</span> |i|<br />               <span class="keyword">case</span> states.pop<br />               <span class="keyword">when</span> <span class="string">"HORIZONTAL"</span><br />                   line = <span class="string">""</span><br />                   digits.each_byte <span class="keyword">do</span> |b|<br />                       line += horizontal_segment(<br />                           <span class="variable">@@lcdDisplayData</span>[b.chr][i]<br />                       )<br />                   <span class="keyword">end</span><br />                   print line + <span class="string">"\n"</span><br />               <span class="keyword">when</span> <span class="string">"VERTICAL"</span><br />                   1.upto(<span class="variable">@size</span>) <span class="keyword">do</span> |j|<br />                       line = <span class="string">""</span><br />                       digits.each_byte <span class="keyword">do</span> |b|<br />                           line += vertical_segment(<br />                               <span class="variable">@@lcdDisplayData</span>[b.chr][i]<br />                           )<br />                       <span class="keyword">end</span><br />                       print line + <span class="string">"\n"</span><br />                   <span class="keyword">end</span><br />               <span class="keyword">when</span> <span class="string">"DONE"</span><br />                   <span class="keyword">break</span><br />               <span class="keyword">end</span><br />           <span class="keyword">end</span><br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> horizontal_segment( type )<br />           <span class="keyword">case</span> type<br />           <span class="keyword">when</span> 1<br />               <span class="keyword">return</span> <span class="string">" "</span> + (<span class="string">"-"</span> * <span class="variable">@size</span>) + <span class="string">" "</span> + (<span class="string">" "</span> * <span class="variable">@spacing</span>)<br />           <span class="keyword">else</span><br />               <span class="keyword">return</span> <span class="string">" "</span> + (<span class="string">" "</span> * <span class="variable">@size</span>) + <span class="string">" "</span> + (<span class="string">" "</span> * <span class="variable">@spacing</span>)<br />           <span class="keyword">end</span><br />       <span class="keyword">end</span><br /><br />       <span class="keyword">def</span> vertical_segment( type )<br />           <span class="keyword">case</span> type<br />           <span class="keyword">when</span> 1<br />               <span class="keyword">return</span> <span class="string">" "</span> + (<span class="string">" "</span> * <span class="variable">@size</span>) + <span class="string">"|"</span> + (<span class="string">" "</span> * <span class="variable">@spacing</span>)<br />           <span class="keyword">when</span> 2<br />               <span class="keyword">return</span> <span class="string">"|"</span> + (<span class="string">" "</span> * <span class="variable">@size</span>) + <span class="string">" "</span> + (<span class="string">" "</span> * <span class="variable">@spacing</span>)<br />           <span class="keyword">when</span> 3<br />               <span class="keyword">return</span> <span class="string">"|"</span> + (<span class="string">" "</span> * <span class="variable">@size</span>) + <span class="string">"|"</span> + (<span class="string">" "</span> * <span class="variable">@spacing</span>)<br />           <span class="keyword">else</span><br />               <span class="keyword">return</span> <span class="string">" "</span> + (<span class="string">" "</span> * <span class="variable">@size</span>) + <span class="string">" "</span> + (<span class="string">" "</span> * <span class="variable">@spacing</span>)<br />           <span class="keyword">end</span><br />       <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The comment above gives you a nice clue to what is going on here.  The class represents a state machine.  For the needed size (set in initialize()), that class walks a series of states (defined in @@lcdStates).  At each state, horizontal and vertical segments are built as needed (with horizontal_segment() and vertical_segment()).</p>
+			<p>The process I've just described is run through display(), the primary interface method.  You pass it a string of digits, it walks each state, and generates segments as needed.</p>
+			<p>One nice aspect of this approach is that it's easy to handle output one line at a time and display() does this.  The top line of all digits, generated by the first "HORIZONTAL" state, is printed as soon as it's built, as is each state that follows.  This resource friendly system could scale well to much larger inputs.</p>
+			<p>The rest of Dale's code (not shown), is just option parsing and the single call to display().</p>
+			<p>My usual thanks to all who played with the quiz.  More thanks to the "golfers" who taught me some interesting tricks about their sport and one more thank you to why the lucky stiff who notes our playing around in his blog, RedHanded.</p>
+			<p>Tomorrow, you'll think up the quiz and your computer will solve it for you...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125664">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125666">Luc Heinrich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125669">David Tran (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125670">Sea&amp;Gull</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125671">Florian Gross</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125677">Luc Heinrich (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125684">Lee Marlow</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125698">Jannis Harder</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125715">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125720">Matthew D Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125723">Jim Menard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125734">David Tran (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125742">David Tran (4)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125746">Nathaniel Talbott</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125749">Jannis Harder (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125754">Laurent Julliard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125761">David Tran (5)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125763">Jannis Harder (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125765">Jannis Harder (4)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125769">Sean Ross</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125772">Dave Burt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125773">Sean Ross (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125799">David Tran (6)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125801">Vance A Heron</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125869">Dale Martenson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125898">David Tran (7)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/125933">Luis Miguel Louren&ccedil;o</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/126180">Glenn Parker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/126382">Zach Dennis</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/196513">Greg Borenstein</a></li>
+                <li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246817">David Ongaro</a></li>
+                <li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/342465">Vento Sola</a></li>
+			</ol>
+			<p><a href="quiz14_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

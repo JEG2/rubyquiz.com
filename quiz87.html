@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Negative Sleep (#87)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Negative Sleep (#87)</span>
+			<p>by MenTaLguY</p>
+			<p>(Inspired by recent insomnia and a #ruby-lang snippet on Anarchaia...)</p>
+			<p>Let's suppose there existed a sleep which accepted negative arguments.  Would it actually imply time travel?  In the case of a negative argument, the obvious description of sleep's behavior (halt the thread for the given minimum number of seconds) would be trivially satisfied by behaving as if sleep(0) had been called.  That's not a very interesting result.</p>
+			<p>Of course, that's not the only way to define sleep.  You could also view a sleep as specifying the relationship between the computations on either side of it.  In that case, sleep(1) might request that the second computation begin at least a second after the completion of the first one.  Negative sleeps would simply reverse the order of the two computations, sleep(-1) meaning that the first computation should begin at least a second after the completion of the second.</p>
+			<p>That sounds slightly impossible to implement, doesn't it?  But consider something like this:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    ( Computation.new { ... } + Sleep.new(-1) + Computation.new { ... } ).run<br /><br /></div></div>
+			<p>Another possible definition for sleep would be a minimum delta time between the end of the first computation and the beginning of the second one.  In that case, the implementation of sleep would have to ensure that the second computation above would begin executing no less than one second before the completion of the first one.  Multiple threads (and the ability to predict or control a computation's duration) might prove useful.</p>
+			<p>Your assignment for this quiz is twofold:</p>
+			<p class="example">1) Devise an "interesting" definition for sleep which allows negative<br />   durations.  Alternately, use one of the definitions given here.<br />2) Write some Ruby code demonstrating behavior which satisfies that<br />   definition.  As with the above example, you needn't provide a drop-in<br />   replacement for Kernel.sleep.</p>
+			<p>If your solution does involve time travel, please ensure that it isn't posted before the end of the 48-hour spoiler period (or before the beginning of the quiz).</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>These invent-your-own definition problems are always funny.  Some of you have far more twisted minds than I can claim and that entertains Hal Fulton.</p>
+			<p>Let's get to the crazy definitions.  Here's a simple one by Dirk Meijer, shown through an example script I wrote:</p>
+			<p class="example">Sleeping for 2 seconds...<br />Seconds so far:  2.<br /><br />Sleeping for 1 seconds...<br />Seconds so far:  3.<br /><br />Sleeping for -1 seconds...<br />Seconds so far:  3.<br /><br />Sleeping for 2 seconds...<br />Seconds so far:  4.</p>
+			<p>Notice that the negative sleep seemed to be instant and the sleep that followed it was shortened by one second.  Here's Dirk's code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">alias</span> :old_sleep :sleep<br />    <span class="global">$sleep</span>=0<br /><br />    <span class="keyword">def</span> sleep(n)<br />     <span class="global">$sleep</span>+=n<br />     <span class="keyword">if</span> <span class="global">$sleep</span>&gt;0<br />       old_sleep(<span class="global">$sleep</span>)<br />       <span class="global">$sleep</span>=0<br />       <span class="keyword">true</span><br />     <span class="keyword">else</span><br />       <span class="global">$sleep</span><br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Nothing too surprising there.  Any call with a positive sleep time adds to a global $sleep counter, triggers the old sleep() routine, and resets the global counter to zero.  A call to with a negative time just subtracts from the counter.  This allows code to queue up offsets, shortening future calls to sleep().</p>
+			<p>For the sake of completeness, here is my test script used above:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -w</span><br /><br />    require <span class="string">"insomnia"</span><br /><br />    <span class="global">$start_time</span> = Time.now<br /><br />    <span class="keyword">def</span> pause(time)<br />      puts <span class="string">"Sleeping for #{time} seconds..."</span><br />      sleep(time)<br />      puts <span class="string">"Seconds so far:  #{(Time.now - $start_time).round}."</span><br />      puts<br />    <span class="keyword">end</span><br /><br />    [2, 1, -1, 2].each { |sec| pause(sec) }<br /><br /></div></div>
+			<p>Let's examine a completely different swing at the target, by Mike Nelson:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">module</span> Kernel<br />      <span class="keyword">def</span> n_sleep(n_sleep_time)<br />        Thread.current.priority = -n_sleep_time<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /><br />    <span class="comment"># test stuff</span><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$0</span><br />      Thread.new { n_sleep(-3); 1.upto(10) {print <span class="string">"A"</span>; sleep(0.1)} }<br />      Thread.new { n_sleep( 1); 1.upto(10) {print <span class="string">"B"</span>; sleep(0.1)} }<br />      Thread.new { n_sleep(-2); 1.upto(10) {print <span class="string">"C"</span>; sleep(0.1)} }<br />      n_sleep(10); 1.upto(10) {print <span class="string">"m"</span>; sleep(0.1)}<br />      loop {<span class="keyword">break</span> <span class="keyword">if</span> Thread.list.size == 1}<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Here the idea is that negative sleep means we should run more often than positive sleep values.  Mike translated that concept to into Thread priorities, which seems similar in definition.  Thus this one line solution sets the Thread priority to the opposite of the passed value (making negatives fast and positives slower).</p>
+			<p>In the test code, four Threads are all running in parallel and sleeping the same intervals, but the initial change of priority affects how they come up.  Observe:</p>
+			<p class="example">ACBmACBmACBmACBmACBmACBmACBmACBmACBmACBm</p>
+			<p>The "A" and "C" Threads always get to go first, because of their higher priority (negative calls to n_sleep()) and the "m" Thread is always tail-end-charlie.</p>
+			<p>Those are both clever, but pretty far from the suggested implementation in the quiz.  For an example of that, let's have a peak at Dingsi's code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> NegativeProc &lt; Proc; <span class="keyword">end</span><br />    <span class="keyword">class</span> ProcStack<br />      <span class="keyword">def</span> initialize(*args)<br />        <span class="variable">@negative</span> = args.shift <span class="keyword">if</span> args.first == <span class="keyword">true</span><br />        <span class="variable">@stack</span> = args<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> + code<br />        new_stack = <span class="variable">@stack</span>.dup<br /><br />        <span class="keyword">if</span> code.is_a? NegativeProc<br />          new_stack.insert(-2, code)<br />          new_stack.unshift(<span class="keyword">true</span>)<br />        <span class="keyword">elsif</span> code.respond_to? <span class="string">'call'</span><br />          <span class="keyword">if</span> <span class="variable">@negative</span><br />            new_stack.insert(-3, code)<br />          <span class="keyword">else</span><br />            new_stack.push(code)<br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br /><br />        ProcStack.new(*new_stack)<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> call<br />        <span class="variable">@stack</span>.each { |p| p.call }<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> ProcStack.sleep(time)<br />        <span class="keyword">if</span> time &lt; 0<br />          NegativeProc.new { Kernel.sleep(time.abs) }<br />        <span class="keyword">else</span><br />          Proc.new { Kernel.sleep(time) }<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">class</span> Proc<br />      <span class="keyword">def</span> + code<br />        ProcStack.new(<span class="keyword">self</span>) + code<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>Breaking this down, the first line just defines a new type of Proc called NegativeProc.  We will see why in a moment.</p>
+			<p>The next class is a ProcStack object, for ordering a bunch of Procs to execute.  You can see in initialize() that the ProcStack tracks whether it is @negative through some optional first parameter and the @stack of Procs/NegativeProcs to run.</p>
+			<p>The tricky method is +().  When a Proc/NegativeProc is added, the @stack is duplicated, adjusted for the new member, and made into a new ProcStack object.  NegativeProcs get added in front of whatever came before them and they set that @negative parameter we spotted in initialize().  When it something else is added, the @negative flag causes it to jump in front of the previous Proc and negative sleep value.  (See below for an example.)  Otherwise, a Proc is just pushed onto the stack.</p>
+			<p>The rest is much easier to take in.  call() just triggers each Proc/NegativeProc in turn.  The class method sleep() builds Procs that sleep().  Negative sleep values build a NegativeProc, so it will trigger the @negative flag dance.  Finally, a +() method is defined on Proc to create the initial ProcStack.</p>
+			<p>That ProcStack.+() is pretty hard to imagine without an example, so here's the code Dingsi included to show it of (with minor changes by me):</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># should print something like "chunky ... bacon\hooray for foxes"</span><br />    STDOUT.sync = 1  <span class="comment"># added by JEG2 to flush print() calls immediately</span><br />    whee = proc { print <span class="string">"bacon\n"</span> }     +<br />           ProcStack.sleep(-2)          +<br />           proc { print <span class="string">"chunky "</span> }     +<br />           ProcStack.sleep(1)           +<br />           proc { print <span class="string">"hooray for "</span> } +<br />           proc { print <span class="string">"foxes"</span> }<br />    whee.call<br /><br /></div></div>
+			<p>Here's how the ProcStack builds up when that is run:</p>
+			<p class="example">#&lt;ProcStack @stack=[proc { print "bacon\n" }]&gt; + ProcStack.sleep(-2)<br />#&lt;ProcStack @stack=[proc { sleep(2) }, proc { print "bacon\n" }]<br />            @negative =true&gt; + proc { print "chunky " }<br />#&lt;ProcStack @stack=[proc { print "chunky " }, proc { sleep(2) },<br />                    proc { print "bacon\n" }]&gt; + ProcStack.sleep(1)<br />#&lt;ProcStack @stack=[proc { print "chunky " }, proc { sleep(2) },<br />                    proc { print "bacon\n" }, proc { sleep(1) }]&gt;<br />...</p>
+			<p>What is the practical value of all this?  I'm not much sure there is one, save perhaps showing that it's entirely possible to invent new computational processes with not too much effort.  Well, that and it's just fun stuff to play with.  Ruby Quiz is all about the fun factor.</p>
+			<p>My thanks to all you crazy time-traveling programmers with insomnia.  May you all sleep(-3) tonight.</p>
+			<p>There will be no Ruby Quiz this week.  I will be busy participating in the annual ICFP programming contest and I encourage others to give it a shot.  See you all next week!</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202243">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202249">Dirk Meijer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202259">Mike Rotondo</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202263">Pierre Barbier de Reuille</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202266">Joey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202268">Dingsi</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202272">Mitchell Koch</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202332">Mike Nelson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202356">Boris Prinz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202409">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202555">Jake McArthur</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/202612">Alex Nedelcu</a></li>
+			</ol>
+			<p><a href="quiz87_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

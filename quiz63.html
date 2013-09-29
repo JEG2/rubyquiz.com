@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Grid Folding (#63)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Grid Folding (#63)</span>
+			<p>by Matthew Moss</p>
+			<p>You have a square sheet of grid paper, 16 cells across by 16 down. A number is written in each cell, starting at 1 in the upper-left corner, going across each line then down the paper, ending with 256 in the lower-right corner. </p>
+			<p>Your task is write a Ruby function to fold the paper in half repeatedly (along the horizontal or vertical middle), until you are left with a single cell, 256 layers thick, and report back on the order of those layers, top to bottom. </p>
+			<p>The input to the function is a string containing the characters "T" (the top edge folded down to the bottom edge), "B" (bottom up to top), "R" (right to left) and "L" (left to right). Not every combination of those will be valid, so make sure you verify your input.  Output will be an Array of Integers from 1 to 256, arranged in the top-to-bottom layer order after all folds are done. </p>
+			<p>To help clarify, here's a 2x2 example.</p>
+			<p class="example">+-+-+<br />|1|2|<br />+-+-+<br />|3|4|<br />+-+-+<br /><br />fold("RB") =&gt; [3, 4, 2, 1]<br />fold("TL") =&gt; [3, 1, 2, 4]<br />fold("LR") =&gt; raise exception for invalid input </p>
+			<p>Extra credit:  Make your fold function take an additional input parameter(s), the dimensions of the paper; dimensions should be power-of-2 in order to fold down to one cell. </p>
+			<p>Extra extra credit:  Write a method check_fold() that takes the resulting Array of Integers from the quiz and returns the transformation String argument (i.e. fold(check_fold(final_order)) == final_order).</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>by Matthew Moss</p>
+			<p>I love mathematics. I love to see problems explored, patterns emerge, simplified and beautified. There is an absolute nature about mathematics not present in most other disciplines, and an understanding of math, I think, is the key to sanity.</p>
+			<p>Okay, so you may not totally agree with me on that, but I needed some sort of intro here, right? Anyway, one area of mathematics that is still rather young is that of origami. Yup, that Japanese art of <a href="http://mathworld.wolfram.com/Origami.html">paper folding</a> is now being more thoroughly examined by <a href="http://www.merrimack.edu/~thull/OrigamiMath.html">mathematicians</a> for applications in engineering and other fields.</p>
+			<p>The paper folding problem I proposed came to mind while thinking of origami, but also while thinking on the mathematics of the <a href="http://web.usna.navy.mil/~wdj/rubik_nts.htm">Rubik's Cube</a>. If the cube could be reduced down to a study in permutations, groups and God's Algorithm, surely a simple folding problem could be done as well.</p>
+			<p>Before we get to that, let's look at the common solution that most people tried: model the paper as a two-dimensional array, each element an array representing a stack of numbers. Each fold, then, would grab various sub-arrays, twist and turn them, mash 'em back together until you were left with a single array representing the final stack of numbers.</p>
+			<p>Let's look at one of the cleanest solutions of the bunch, written by Sander Land:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="keyword">def</span> reverse_each<br />        map {|x| x.reverse}<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>First we have a helper method defined on Array that reverses each of the items in the array, not the array itself. This is used to flip the paper horizontally. My only complaint here is the name; I'm used to seeing a number of "each" methods in Ruby as iterators that yield to a block. Given the nature of the problem, i would have preferred "reflect_h" or similar.</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> rightFold(grid)<br />      grid.map { |row|<br />        <span class="keyword">for</span> ix <span class="keyword">in</span> 0...row.length/2<br />        row[ix] = row[-ix-1].reverse + row[ix]<br />      <span class="keyword">end</span><br />        row[0...row.length/2]<br />      }<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>While some solutions included four different fold methods, one for each direction, a few authors (including Sander) wrote only one fold method, turning the paper before and after the fold to orient things properly. A cleaner solution was generally found when turning, since turn methods were generally much simpler than fold methods.</p>
+			<p>Sander implements a right-to-left fold a half-row at a time. Matching pairs of stacks are found via positive (for the left side) and negative (right side) indices. Since this is a right-to-left fold, the right side folds over on top the left, which makes it first in the new stack but also reversed.</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> fold(str,w=8,h=8)<br />      grid = Array.new(h) {|y| Array.new(w) {|x| [w*y+x+1] }  }<br />      str.each_byte {|c|<br />        grid = <span class="keyword">case</span> c<br />        <span class="keyword">when</span> ?R <span class="keyword">then</span> rightFold(grid)<br />        <span class="keyword">when</span> ?L <span class="keyword">then</span> rightFold(grid.reverse_each).reverse_each<br />        <span class="keyword">when</span> ?B <span class="keyword">then</span> rightFold(grid.transpose).transpose<br />          <span class="keyword">when</span> ?T <span class="keyword">then</span> rightFold(grid.reverse.transpose).transpose.reverse<br />      <span class="keyword">end</span><br />      }<br />      raise <span class="string">"invalid folding instructions"</span> <span class="keyword">unless</span> grid.length == 1 &amp;&amp;<br />                                                  grid[0].length == 1<br />      <span class="keyword">return</span> grid[0][0]<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Now the actual folding code. After creating the grid (i.e., paper), Sander iterates over each command, updating the grid with the result of a combination of rightFold, reverse_each, and the Array methods transpose and reverse. Take a moment to see what gets passed into rightFold and what gets done with the result from rightFold; with some effort, you'll see how he is turning the paper before folding, then turning it back.</p>
+			<p>A little more work here (an improved name, a couple more helpers) would make it just a tad better:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="keyword">def</span> reflect_h<br />        map { |x| x.reverse }<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> turn_cw<br />        reverse.transpose<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> turn_ccw<br />        transpose.reverse<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    grid = <span class="keyword">case</span> c<br />    <span class="keyword">when</span> ?R <span class="keyword">then</span> rightFold(grid)<br />    <span class="keyword">when</span> ?L <span class="keyword">then</span> rightFold(grid.reflect_h).reflect_h<br />    <span class="keyword">when</span> ?B <span class="keyword">then</span> rightFold(grid.turn_ccw).turn_cw<br />    <span class="keyword">when</span> ?T <span class="keyword">then</span> rightFold(grid.turn_cw).turn_ccw<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This next solution by Simon Kroeger is also quite clean and simple, but doesn't use three-deep arrays. In fact, Simon starts with an unfold function, then uses it in the implementation of fold.</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">def</span> unfold z, cmds<br />       x, y, xdim, ydim, layer = 0, 0, 0.5, 0.5, 2**cmds.size<br /><br />       cmds.unpack(<span class="string">'C*'</span>).reverse_each <span class="keyword">do</span> |cmd|<br />         x, xdim = x - xdim, xdim * 2 <span class="keyword">if</span> cmd == ?R<br />         x, xdim = x + xdim, xdim * 2 <span class="keyword">if</span> cmd == ?L<br />         y, ydim = y - ydim, ydim * 2 <span class="keyword">if</span> cmd == ?B<br />         y, ydim = y + ydim, ydim * 2 <span class="keyword">if</span> cmd == ?T<br /><br />         <span class="keyword">if</span> z &gt; (layer /= 2)<br />           z = 1 + (layer * 2) - z<br />           x = -x <span class="keyword">if</span> cmd == ?R || cmd == ?L<br />           y = -y <span class="keyword">if</span> cmd == ?B || cmd == ?T<br />         <span class="keyword">end</span><br />       <span class="keyword">end</span><br />       (xdim + x + 0.5 + (ydim + y - 0.5) * xdim * 2).to_i<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>unfold seeks to find the position of only one number (z) at a time. Since this is unfolding, the commands are examined in reverse order. Each fold command doubles the corresponding dimension of the paper (by doubling either xdim or ydim), and also moves the number's position (x,y) in the proper direction: adding when folding left-to-right or top-to-bottom, and subtracting in the other two fold directions.</p>
+			<p>The check of z against layer is a little strange at first sight. The way I came to think of it is that you hold down a section of the paper as you unfold the rest. That section doesn't move, doesn't get flipped over, and so skips the extra work. However, if the number you're unfolding isn't on that immobile section, a bit of fixup work is needed since the region containing that number is flipped either horizontally (x = -x) or vertically (y = -y) as it is unfolded.</p>
+			<p>The final line is similar to the conversion from 2d to 1d indices, with a few cleanup values to make all the numbers come out right.</p>
+			<p>That's all the code solutions I'm going to show here. I would suggest looking at some of the other solutions though. In particular, Gregory Seidman and Luke Blanshard worked out a couple of non-array solutions. They recognized that power-of-2 dimensions implied you could represent cells as bit patterns and use bitwise operators (especially xor) to do the folding. Neither solution is particularly easy to read, but can be understood with a bit of work. However, their solutions, I think, come closest to my desire of distilling the problem down to simple mathematics. With some more effort (which I may attempt later), I think this approach could yield some interesting insights into paper folding and a beautiful solution.</p>
+			<p>I think there is still some interesting math to pull out of this problem. For example, Andrew Dudzik ponders: "There are never two sequences that give the same perm. Does anybody know why this is? Seems like an interesting math problem." Myself, I wonder if he's right.</p>
+			<p>I also wonder if every possible permutation of numbers is possible as a result..... absolutely not! Consider a mere 4x4 sheet of paper (i.e., 16 grid cells). Now, a dimension of 4 implies only 2 folds in that dimension. Since each fold in a particular dimension can be only one of two choices, there are 4 ways to fold in that dimension. Since we have two dimensions, so far we have 4*4 = 16 ways to completely fold the paper. But the individual folds can occur in any order, which is 4! permutations.  So the total number of ways to fold a 4x4 sheet of paper is 16 * 4!, or 384 ways. But there are 16 grid cells, which means 16! (or 20,922,789,888,000) permutations of those numbers. Sheesh!</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176456">Luke Blanshard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176459">Michael Burrows</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176460">Vladimir Agafonkin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176464">Gregory Seidman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176467">Sander Land</a></li>
+				<li><a href="http://groups.google.com/group/comp.lang.ruby/msg/1340aeeca6e3a13e">Morus Walter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176470">Chris Turner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176472">Andrew Dudzik</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176477">Aditya MahaJan</a></li>
+				<li><a href="http://groups.google.com/group/comp.lang.ruby/msg/1acc80ede786ca04">Nathan Morse</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176481">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176482">Vance Heron</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176494">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176506">Bill Dolinar</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176510">Horndude77</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176515">Bob Showalter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176519">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176522">Edward Faulkner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176532">David Tran (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176541">Matthew Moss (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176546">Matthew Moss (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176599">Paul Novak</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176602">Daniel Sheppard</a></li>
+				<li><a href="http://groups.google.com/group/comp.lang.ruby/msg/1340aeeca6e3a13e">Morus Walter (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176611">Bill Dolinar (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176829">Dominik Bathon</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/176959">Luke Blanshard (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/177126">David Tran (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/177193">Mike Harris</a></li>
+			</ol>
+			<p><a href="quiz63_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

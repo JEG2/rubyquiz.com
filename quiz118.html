@@ -1,0 +1,75 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Micrrowave Numbers (#118)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Micrrowave Numbers (#118)</span>
+			<p>by Matthew Moss</p>
+			<p>Microwave ovens have had a significant impact on how we cook today. One report from 1997 indicated that 90% of US households owned one. Assuming the promise of faster cooking times, that's a lot of time saved.</p>
+			<p>But I imagine there are microwave users out there who know the trick to saving even more time. Knowing that many microwave ovens recognize 90 seconds as the same as 1 minute 30 seconds, finger-travel distance is saved. (Yes, it's rather insignificant, but don't tell them... us... whatever.)</p>
+			<p>Your task is to write a function in Ruby that determines the optimal pattern of buttons to hit based on this example button pad (where * is "Cook"):</p>
+			<p class="example">+---+---+---+<br />| 1 | 2 | 3 |<br />+---+---+---+<br />| 4 | 5 | 6 |<br />+---+---+---+<br />| 7 | 8 | 9 |<br />+---+---+---+<br />    | 0 | * |<br />    +---+---+</p>
+			<p>Your function should accept an integral time value representing desired seconds and should output an integer that indicates the buttons to press on the microwave's input pad. The metric for determining what input is more efficient is distance (not number of buttons hit). Distance to the Cook button must be included in your efficiency calculation. For simplicity in distance calculations, you may consider the shape of each button to be square.</p>
+			<p>Examples:</p>
+			<p class="example"># 99 seconds is 1:39, but 99 is less movement than 139<br />microwave(99) =&gt; 99<br /><br /># 71 seconds is only two keys, but entering 111 is far less movement.<br />microwave(71) =&gt; 111<br /><br /># 120 seconds is 2 minutes, and 200 is slightly less movement than 120<br />microwave(120) =&gt; 200<br /><br /># 123 seconds is 2:03, but 203 is a lot more distance<br />microwave(123) =&gt; 123</p>
+			<p>Once you've done the basic version, try modifying your code enough to handle these:</p>
+			<p>1. We often don't care to be exact. 99 seconds, for example, is basically the same as 95 seconds, but more efficient to enter. Modify your function to accept a tolerance in seconds, and return answers that are within that tolerance of the desired time. Try +-5 and +-10 seconds.</p>
+			<p>2. Try changing the efficiency metric, to something like number of buttons pressed, or Manhattan distance.</p>
+			<p>3. Try changing the button dimensions... For example, what happens if each button is twice as wide as it is high?</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>The solutions this time around are fantastic.  Really.  I mean Ryan Leavengood is back.  Enough said.</p>
+			<p>No matter which solution I select I'll be doing you a disservice, so you are all honor-bound to read through the code I don't show.  Since I must choose one though, I'm going with Christian Neukirchen's solution this time around.  It's a trivial 48 lines with comments and whitespace, it solves the quiz, and it even hits two of the extra credit suggestions.  Beyond that, I just thought the code was pretty without even building any classes.</p>
+			<p>Let's dive in:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># My straight-forward solution.</span><br /><br />    require <span class="string">'enumerator'</span><br /><br />    <span class="comment"># How much can the time differ?</span><br />    FUZZ = 0<br /><br />    POS = { ?1 =&gt; [0,0], ?2 =&gt; [1,0], ?3 =&gt; [2,0],<br />            ?4 =&gt; [0,1], ?5 =&gt; [1,1], ?6 =&gt; [2,1],<br />            ?7 =&gt; [0,2], ?8 =&gt; [1,2], ?9 =&gt; [2,2],<br />                         ?0 =&gt; [1,3], ?* =&gt; [2,3] }<br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>You can see that enumerator is pulled in here for some fancy iteration tricks we will see very soon.</p>
+			<p>The FUZZ constant is actually a control for the first extra credit point.  You can set it to the number of seconds the suggested keystrokes can differ from the requested time.  The default, zero, disables any number fudging.</p>
+			<p>POS holds the column and row coordinates of each button on the keypad.  We will see this used in the distance calculation routine.  In fact, that's the next bit of code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> metric(string)<br />      string.enum_for(:each_byte).map { |b| POS[b] }.<br />             enum_for(:each_cons, 2).inject(0) { |sum, ((x1,y1), (x2, y2))|<br />        <span class="comment"># 1-norm</span><br />        <span class="comment"># sum + (x1-x2).abs + (y1-y2).abs</span><br /><br />        <span class="comment"># 2-norm</span><br />        sum + Math.sqrt((x1-x2)**2 + (y1-y2)**2)<br />      }<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This code takes a String of keystrokes and returns the total distance of all the button traveling needed to enter it.  Here are some examples of usage:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; metric(<span class="string">"9*"</span>)<br />    =&gt; 1.0<br />    &gt;&gt; metric(<span class="string">"6*"</span>)<br />    =&gt; 2.0<br />    &gt;&gt; metric(<span class="string">"313*"</span>)<br />    =&gt; 7.0<br />    &gt;&gt; metric(<span class="string">"1*"</span>)<br />    =&gt; 3.60555127546399<br /><br /></div></div>
+			<p>The iterators are the trickiest part of this code, so let's work through them.</p>
+			<p>First, String's default iteration is by lines of the String, so map() would normally transform each line.  Christian wants to work with each character though and there isn't a map_byte().  So he made one.  In other words, you can think of enum_for(:each_byte).map { |b| ... } as map_byte { |b| ... }.  Once you understand that, it's easy to see that each character is just translated into the coordinates for that key.</p>
+			<p>The next iterator, enum_for(:each_cons, 2), allows you group adjacent keys and iterate over the pairs.  This is easier to see than explain, so here's another example:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; [1, 2, 3].enum_for(:each_cons, 2).to_a<br />    =&gt; [[1, 2], [2, 3]]<br /><br /></div></div>
+			<p>I used simple Integers instead of the coordinate tuples the code is actually looping through, but see how they are perfectly grouped for calculating distance?  That leads us to the final iterator in this chain.</p>
+			<p>The inject() iterator is just a hand-rolled sum() method.  The tricky part is how the parentheses are used are used to unwrap the nested Arrays.  The outer set separates the two points we are comparing, joined by each_cons().  The inner sets divide the points themselves which are then assigned to local variables.  There's quite a bit of wrapping and unwrapping in there.</p>
+			<p>The actual body of all this iteration is easy stuff:  it does a running sum of the euclidean distance between all of the buttons.  Well, that's the uncommented version.  If you switch the comments, the other line does the Manhattan distance, which covers the second extra credit point.</p>
+			<p>Now that we have a way to get the distance, we just need a way to generate the keystroke combinations.  Here's that code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> entries(time)<br />      <span class="keyword">return</span> []  <span class="keyword">if</span> time &lt;= 0<br /><br />      min, sec = time.divmod(60)<br />      entries = []<br /><br />      <span class="comment"># seconds only</span><br />      entries &lt;&lt; <span class="string">"%d*"</span> % [time]                 <span class="keyword">if</span> time &lt; 100<br /><br />      <span class="comment"># usual time format</span><br />      entries &lt;&lt; <span class="string">"%d%02d*"</span> % [min, sec]<br /><br />      <span class="comment"># more than 60 seconds</span><br />      entries &lt;&lt; (<span class="string">"%d%02d*"</span> % [min-1, sec+60])  <span class="keyword">if</span> min &gt; 1 &amp;&amp; sec &lt; 40<br /><br />      entries<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method is very straightforward.   An Array is constructed, all the possible keystroke entries for the passed time are added to the Array, and the Array is returned.</p>
+			<p>There are only three possible choices for reasonable keystroke entries.  The standard case is the one in the middle, a traditional minutes and seconds entry.  Now for low second counts that's going to give us keystrokes like "040*" which is pointless.  The first condition handles that, by adding manual entry of the seconds.  This is set to work for all times below 100 seconds though, just in case "80*" turns out to be a better choice than "120*".  Finally, the third option covers any case where we have at least one minute and 39 seconds or less.  In those cases, we could drop the time by a minute and add that back as extra seconds.  For example, "230*" can also be entered as "190*".</p>
+			<p>Now we just need a little more code to tie these two methods together.  Christian choose to show all mappings between one and 999 seconds.  Here's the code for that:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    1.upto(999) { |time|<br />      entries = (-FUZZ..FUZZ).map { |offset| entries(time + offset) }.flatten<br /><br />      <span class="comment"># Sort by movement length, then by keypresses.</span><br />      quickest = entries.sort_by { |s| [metric(s), s.size] }.first<br />      puts <span class="string">"%3d (%02d:%02d): %s"</span> % [time, time.divmod(60), quickest].flatten<br />    }<br /><br /></div></div>
+			<p>The upto() iterator is just the range of solutions I described.  The first line inside there pulls all possible entries() for the selected time, remembering to account for fudging of the numbers.  Entries are then sorted using the metric() method and a keystroke count for tie-breaking.  The pattern that sorts to top is selected.  Then the last line just prints the results.</p>
+			<p>My thanks to all who spend a lot more quality time with their microwave than I do.  I enjoyed the discussion of edge cases and I really did learn something cool from every single solution.</p>
+			<p>Tomorrow we'll tackle a question Gavin Kistner captured off the radio for us...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246265">Paul M. Lambert</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246269">Ryan Leavengood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246271">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246272">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246318">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246331">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246413">Gavin Stark</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246568">harlan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/246910">Dave</a></li>
+			</ol>
+			<p><a href="quiz118_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

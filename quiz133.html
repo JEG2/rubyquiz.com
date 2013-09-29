@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Numbers Can Be Words (#133)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Numbers Can Be Words (#133)</span>
+			<p>by Morton Goldberg</p>
+			<p>When working with hexadecimal numbers it is likely that you've noticed some hex numbers are also words. For example, 'bad' and 'face' are both English words and valid hex numbers (2989 and 64206, respectively, in decimal). I got to thinking that it would be interesting to find out how many and which hex numbers were also valid English words. Of course, almost immediately I started to think of generalizations. What about other bases? What about languages other than English?</p>
+			<p>Your mission is to pick a word list in some language (it will have be one that uses roman letters) and write Ruby code to filter the list to extract all the words which are valid numbers in a given base. For many bases this isn't an interesting task--for bases 2-10, the filter comes up empty; for bases 11-13, the filter output is uninteresting (IMO); for bases approaching 36, the filter passes almost everything (also uninteresting IMO). However, for bases in the range from 14 to about 22, the results can be interesting and even surprising, especially if one constrains the filter to accept only words of some length.</p>
+			<p>I used `/usr/share/dict/words` for my word list. Participants who don't have that list on their system or want a different one can go to Kevin's Word List Page (http://wordlist.sourceforge.net/) as a source of other word lists.</p>
+			<p>Some points you might want to consider: Do you want to omit short words like 'a' and 'ad'? (I made word length a parameter). Do you want to allow capitalized words (I prohibited them)? Do you want to restrict the bases allowed (I didn't)?</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>We all know this problem isn't tough at all.  Myself and several others solved it with a one-liner.  We all enjoy a good one-liner, right?</p>
+			<p>Actually, I built this solution before the quiz was posted and when I shared it with Morton, he, very politely, mentioned the G-word.  The fact is that I wasn't really trying to "golf" though.  I was using a strategy of problem solving I call Thinking With The Command-Line.  Let me take you through my process to my solution and beyond to show your what I mean.</p>
+			<p>First, it's important to remember that Ruby has a lot of command-line switches that help with these quick tasks.  It's not a sin to use these tools.  They make short work of jobs like this because the easy things should be easy.  You're not golfing when you use these, you're just telling Ruby this is a quick job and you trust her to handle the details on this one.</p>
+			<p>Let's start with the basics.  Obviously, we want to read over the dictionary and print some words in it.  Let's begin with just that much:</p>
+			<p class="example">$ ruby -pe 1 /usr/share/dict/words</p>
+			<p>The -p switch asks Ruby to wrap your program in a read and print loop over the files given as arguments (or STDIN).  That was really all I wanted, so I just needed a program to be wrapped.  That's where -e comes in.  It let's you give the code on the command-line and I provided the most trivial code I could think of.  It does nothing of course.  It just gives Ruby something to wrap and let's her do all of the work for me.</p>
+			<p>OK, so I'm now printing the dictionary, but I really want to print just some words of the dictionary.  I need to introduce some conditional that only prints when I say it's OK to do so.  For that, we move to -p's twin -n and actually resort to writing a little code:</p>
+			<p class="example">$ ruby -ne 'print if true' /usr/share/dict/words</p>
+			<p>The -n switch gives us the same loop around our code, just minus the print() statement.  This lets me choose when I want to print() something.</p>
+			<p>The read loops that Ruby creates for us always stick the current line in $_.  By default, that exactly what print() spits out.</p>
+			<p>Great.  That's about half of this task.  Now I just need the if condition and I'm done.  Before I figure that out though, let's examine one other command-line switch.  I want to set a base for the code to use.  It's true that I could just drop a number in the code and change it as needed, but it would be better if the number was separate.  Ruby has a shortcut switch for that too:</p>
+			<p class="example">$ ruby -se 'p $base' -- -base=14</p>
+			<p>The -s switch adds some rudimentary variable processing to switches passes to the program.  Note that I said switches passed to the program, not to Ruby.  I used the -- switch above to end Ruby's switch processing and switch into the program context.  You can then see that the switch just sets a global for us.  That's fine for our purposes.</p>
+			<p>That means all we need is a Regexp that selects the words we want.  I came up with:</p>
+			<p class="example">/\A[\d\s#{("a".."z").to_a.join[0...($base.to_i - 10)]}]+\Z/i</p>
+			<p>That's really just one big character class describing the accepted characters.  The Ruby code inside it creates a String of the alphabet and pulls enough letters off the front of it to match the current base.  Note that we also allow for digits and the whitespace that will be at the end of each line.</p>
+			<p>If we put all of that together, we pretty much have my solution:</p>
+			<p class="example">$ ruby -sne<br />'print if $_ =~ /\A[\d\s#{("a".."z").to_a.join[0...($base.to_i - 10)]}]+\Z/'<br />-- -base=12 /usr/share/dict/words</p>
+			<p>If you're not found of the Regexp, we could remove it.  That involves two changes:</p>
+			<p class="example">1.  Convert our base into an Array of acceptable characters.  We only want<br />    such code to run one time, so we will place it in a BEGIN { ... } block.<br />2.  Bring the characters in as an Array so that we can ease the testing of<br />    letters.  Ruby's has switches for that too.  We can use -a to split()<br />    the line of input and -F to provide the pattern to split() on.  We will<br />    also add -l to remove the line ending for us.</p>
+			<p>Here's the code:</p>
+			<p class="example">$ ruby -slap<br />       -F'\b|\B'<br />       -e 'BEGIN { $hex = ("a".."z").to_a.first($base.to_i - 10) }'<br />       -e 'next unless $F.all? { |l| $hex.include? l.downcase }'<br />       -- -base=14 /usr/share/dict/words </p>
+			<p>Note that I snuck in another change in addition to those described.  I switched back to -p and just skipped word that aren't numbers.</p>
+			<p>The trick in this version is that -a causes each line of input to be split() into the variable $F.  I also added the -F switch with a pattern that will match between each character to control how the split() works.</p>
+			<p>Of course, we could argue the point of if this is still a one-liner since I'm now passing Ruby two lines of code, but I try not to loose a lot of sleep over such things.</p>
+			<p>A final weakness of this solution is that it doesn't finish processing as soon as it could.  We can easily add that if you can tolerate one more line:</p>
+			<p class="example">$ ruby -slap<br />       -F'\b|\B'<br />       -e 'BEGIN { $hex = ("a".."z").to_a.first($base.to_i - 10) }'<br />       -e 'break unless $hex.include? $F.first.downcase'<br />       -e 'next unless $F.all? { |l| $hex.include? l.downcase }'<br />       -- -base=14 /usr/share/dict/words </p>
+			<p>Now might be the right time to consider putting all of this in a file, especially if we wanted to do more with it.  I'm done though, so I'll leave that as an exercise for the interested reader.</p>
+			<p>My thanks to all who showed how easy this can really be.</p>
+			<p>Tomorrow we're back to simulations and drawing pretty pictures...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263399">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263400">Raf Coremans</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263401">Morton Goldberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263402">Lutz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263403">Josef 'Jupp' Schugt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263408">Eugene Kalenkovich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263411">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263413">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263415">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263428">Rick DeNatale</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263431">Lu Zhen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263432">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263461">Robert Klemme</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/263550">Douglas F Shearer</a></li>
+			</ol>
+			<p><a href="quiz133_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

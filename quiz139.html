@@ -1,0 +1,79 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - IP to Country (#139)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">IP to Country (#139)</span>
+			<p>This week's Ruby Quiz is to write a simple utility.  Your program should accept an IP address as a command-line argument and print out the two letter code for the country that IP is assigned in.  You can find a database for the matching at:</p>
+			<p><a href="http://software77.net/cgi-bin/ip-country/geo-ip.pl">IP to Country Database</a></p>
+			<p>To keep the problem interesting though, let's write our programs with a focus on speed and memory efficiency.</p>
+			<p class="example">$ time ruby ip_to_country.rb 68.97.89.187<br />US<br /><br />real    0m0.314s<br />user    0m0.259s<br />sys     0m0.053s</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Matthias Wätcher made a classic mistake this week.  He sent in his first ever quiz solution and told us not to expect anything special out of it.  We later learned that it was a lot faster than all of the other solutions, thanks to more effort from Matthias.  His code taught me some new tricks and I want to share those with you.</p>
+			<p>But first, let's talk speed.</p>
+			<p>Most of the solutions are quite quick, relatively speaking.  What's the shared secret of speed?  Binary search.  The records are in sorted order, so it's possible to perform a simple cut-the-possible-matches-in-half-at-each-step lookup.  That favored algorithm makes short work of what could otherwise be a lengthy search.</p>
+			<p>Now you can do a binary search on the database file as is and several solutions did.  This is a little trickier, because the records are not of a standard size.  You have to be super careful not to accidently skip records.  While the solutions handled the challenge very well, you can make things quite a bit easier if you are willing to preprocess the file.</p>
+			<p>You can also speed things up with some clever preprocessing.  That was the other trick Matthias used to find answers so quickly.</p>
+			<p>Matthias realized that while the actual records contain quite a bit of data, we only really care about the start of a range, the end of a range, and the country code.  You can fit all of that in just ten bytes with four for each address and two for the country.</p>
+			<p>The file also contains some consecutive ranges that can be collapsed for the purposes of our search.  Such ranges may differ in some attributes, but as long as their country codes are the same we can treat them as a single unit.</p>
+			<p>Now that you know the goal, let's take a look at the packing code Matthias sent in:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/ruby</span><br />    <span class="comment"># comment</span><br /><br />    last_start=<span class="keyword">nil</span><br />    last_end=<span class="keyword">nil</span><br />    last_country=<span class="keyword">nil</span><br />    File.open(<span class="string">"packed-ip.dat"</span>,<span class="string">"wb"</span>) <span class="keyword">do</span> |wfile|<br />      IO.foreach(<span class="string">"geo-ip.csv"</span>) <span class="keyword">do</span> |line|<br />        <span class="keyword">next</span> <span class="keyword">if</span> !(line =~ <span class="string">/^"/</span> )<br />          s,e,d1,d2,co=line.delete!(<span class="string">"\""</span>).split(<span class="string">","</span>)<br />          s,e = s.to_i,e.to_i<br />          <span class="keyword">if</span> !last_start<br />    <span class="comment"># initialize with first entry</span><br />            last_start,last_end,last_country = s,e,co<br />          <span class="keyword">else</span><br />            <span class="keyword">if</span> s==last_end+1 <span class="keyword">and</span> co==last_country<br />    <span class="comment"># squeeze if successive ranges have zero gap</span><br />              last_end=e<br />            <span class="keyword">else</span><br />    <span class="comment"># append last entry, remember new one</span><br />              wfile &lt;&lt; [last_start,last_end,last_country].pack(<span class="string">"NNa2"</span>)<br />              last_start,last_end,last_country = s,e,co<br />            <span class="keyword">end</span><br />          <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="comment"># print last entry</span><br />      <span class="keyword">if</span> last_start<br />        wfile &lt;&lt; [last_start,last_end,last_country].pack(<span class="string">"NNa2"</span>)<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The three variables declared up front are for tracking the ranges.  These will be used to collapse consecutive ranges.</p>
+			<p>The next bit of code creates the binary database we will write into and parses the CSV formated data.  Though the data is in the CSV format, the actual content is trivial and you don't need a proper parser to get at it.  As you can see, Matthias just checks for lines starting with a quote, pulls out all quote characters, and split()s on commas.  This is faster than using a parser.</p>
+			<p>The if/else chain in the middle of the code does most of the work.  First, it stores the initial range in the tracking variables.  For all other ranges it tests to see if it is consecutive with the last one recorded and has the same country code.  When it does, the endpoint of the last range is just bumped to include them both.  When it doesn't, the last range is written to the file and the code starts tracking the new range.  The final if statement ensures that we write out the final range before exiting.</p>
+			<p>This really isn't too much work and it runs in under two seconds on my box.  That's a small price to pay for a speed gain every time we look up an address.</p>
+			<p>Let's dive into the search code now.  Here's how it begins:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/ruby</span><br /><br />    <span class="comment"># take command line or stdin -- the latter has performance advantage</span><br />    <span class="comment"># for long lists</span><br />    <span class="keyword">if</span> ARGV[0]<br />      arr=ARGV<br />    <span class="keyword">else</span><br />      arr=<span class="global">$stdin</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>As the comment tells us, Matthias added another way to feed the program addresses.  Where I said we should take one from the command-line arguments, this code actually handles any number of addresses from command-line arguments or STDIN.</p>
+			<p>This next bit of code opens up our database:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="comment"># the binary table file is looked up with each request</span><br />    File.open(<span class="string">"packed-ip.dat"</span>,<span class="string">"rb"</span>) <span class="keyword">do</span> |rfile|<br />      rfile.seek(0,IO::SEEK_END)<br />      record_max=rfile.pos/10-1<br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>The seek() and pos() calls here are used to find the end of the file.  You need to know both ends of a data set to perform a binary search.  Note that dividing by ten gives us the count of records since they are a fixed width and Matthias subtracts one because we will never need to seek() to the end of the last record again.</p>
+			<p>Now there's a touch more preparation for each address we want to find:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      arr.each { |argv|<br />        <span class="comment"># build a 4-char string representation of IP address</span><br />        <span class="comment"># in network byte order so it can be a string compare below</span><br />        ipstr= argv.split(<span class="string">"."</span>).map {|x| x.to_i.chr}.join<br /><br />        <span class="comment"># ...</span><br /><br /></div></div>
+			<p>In order to avoid a bunch of to_i() calls on each range extracted from the database, Matthias just encodes the address we are hunting for into the character encoding used in the database.  This way simple String comparisons can determine if the address it in the range.</p>
+			<p>We're now ready for the actual search code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">        <span class="comment"># ...</span><br /><br />        <span class="comment"># low/high water marks initialized</span><br />        low,high=0,record_max<br />        <span class="keyword">while</span> <span class="keyword">true</span><br />          mid=(low+high)/2       <span class="comment"># binary search median</span><br />          rfile.seek(10*mid)     <span class="comment"># one record is 10 byte, seek to position</span><br />          str=rfile.read(8)      <span class="comment"># for range matching, we need only 8 bytes</span><br />          <span class="comment"># at comparison, values are big endian, i.e. packed("N")</span><br />          <span class="keyword">if</span> ipstr&gt;=str[0,4]     <span class="comment"># is this IP not below the current range?</span><br />            <span class="keyword">if</span> ipstr&lt;=str[4,4]   <span class="comment"># is this IP not above the current range?</span><br />              puts rfile.read(2) <span class="comment"># a perfect match, voila!</span><br />              <span class="keyword">break</span><br />            <span class="keyword">else</span><br />              low=mid+1          <span class="comment"># binary search: raise lower limit</span><br />            <span class="keyword">end</span><br />          <span class="keyword">else</span><br />            high=mid-1           <span class="comment"># binary search: reduce upper limit</span><br />          <span class="keyword">end</span><br />          <span class="keyword">if</span> low&gt;high            <span class="comment"># no entries left? nothing found</span><br />            puts <span class="string">"no country"</span><br />            <span class="keyword">break</span><br />          <span class="keyword">end</span><br />        <span class="keyword">end</span><br />      }<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This is a pretty textbook binary search.  You always begin by going to the middle of the current low and high.  In this case that's a seek() call and we have to remember to multiply the midpoint by our record size of ten.</p>
+			<p>Once we are at the right record, the code read()s the first eight bytes and compares the address against the low and high for the range.  When it is in the range, the final two bytes are read and printed.  If the address is below the current range, we drop the high to below the current range.  If it's above, we raise the low to above the current range.  A final check is added to catch the cases where no match was found, in which case our low will bypass the high.</p>
+			<p>Remember that a second goal of the quiz described search was to be memory friendly.  This code does terrific on that front since only one record needs to be in memory at a time.  Once the checks are done, it can be replaced by the next record.</p>
+			<p>My thanks to all who showed so many great examples of this classic algorithm.</p>
+			<p>Tomorrow we will write programs that can help me to better understand my wardrobe...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269259">Jes&uacute;s Gabriel y Gal&aacute;n</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269268">Matthias W&auml;chter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269269">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269271">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269272">steve d</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269282">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269283">Luis Parravicini</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269286">Jesse Brown</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269301">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269307">Eugene Kalenkovich</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269316">Bill Kelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269381">Jes&uacute;s Gabriel y Gal&aacute;n (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269521">Erik Veenstra</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269533">steve d (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269542">Kevin Winchester</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269852">Mark Thomas</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269903">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/269953">steve d (3)</a></li>
+			</ol>
+			<p><a href="quiz139_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

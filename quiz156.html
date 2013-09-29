@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Internal Rate of Return (#156)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Internal Rate of Return (#156)</span>
+			<p>by Harrison Reiser</p>
+			<p>Internal Rate of Return (IRR – <a href="http://en.wikipedia.org/wiki/Internal_rate_of_return" title="Internal rate of return - Wikipedia, the free encyclopedia">http://en.wikipedia.org/wiki/Internal_rate_of_return</a>) is a common financial metric, used by investment firms to predict the profitability of a company or project. Finding the IRR of a company amounts to solving for it in the equation for Net Present Value (NPV – <a href="http://en.wikipedia.org/wiki/Internal_rate_of_return" title="Internal rate of return - Wikipedia, the free encyclopedia">http://en.wikipedia.org/wiki/Net_present_value</a>), another valuable decision-making metric:</p>
+			<p class="example">       N      C_t<br />NPV =  Σ  ------------<br />      t=0 (1 + IRR)**t</p>
+			<p>This week's quiz is to calculate the IRR for any given variable-length list of numbers, which represent yearly cash flows, the C_t's in the formula above: C_0, C_1, etc. (C_0 is typically a negative value, corresponding to the initial investment into the project.) From the example in the Wikipedia article (<a href="http://en.wikipedia.org/wiki/Internal_rate_of_return" title="Internal rate of return - Wikipedia, the free encyclopedia">http://en.wikipedia.org/wiki/Internal_rate_of_return</a>), for instance, you should be able to produce a rate of 17.09% (to four decimal places, let's say) from this or a similar command:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    irr([-100,+30,+35,+40,+45])<br />    =&gt; 0.1709...<br /><br /></div></div>
+			<p>Keep in mind that an IRR greater than 100% is possible. Extra credit if you can also correctly handle input that produces negative rates, disregarding the fact that they make no sense.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>Solving the IRR equation is essentially a matter of computational guesswork.  You pick an IRR and check to see if the NPV is zero, or very close to it.  When it is, you found the right IRR.  If you didn't find the right IRR, it's time to guess again.</p>
+			<p>How to make your guesses is the main issue with solving this problem.  Most people used a little calculus to refine their guess.  Newton's method can be used to solve equations like the one we have for NPV.</p>
+			<p>Alex Shulgin used a simpler guess metric that's probably a little more familiar to us computer guys, especially if you have forgotten as much calculus as I have.  Alex did a binary search for the answer.  This process is actually very simple, once you find a good upper and lower bound for the search.</p>
+			<p>Let's have a look at how Alex solved the quiz.  First, we need to be able to calculate an NPV:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby</span><br /><br />    <span class="keyword">def</span> npv(ct, i)<br />     sum = 0<br />     ct.each_with_index{ |c,t| sum += c/(1 + i.to_f)**t }<br />     sum<br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>That's a direct code translation of the equation given in the quiz.  With it, we can test our IRR guess to see what NPV value they return.</p>
+			<p>Now, for Alex's irr() method, let's actually start at the end of the code since that makes it easier to understand:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> irr(ct)<br />     <span class="comment"># ... set l and r bounds in here ...</span><br /><br />     m = 0<br />     loop <span class="keyword">do</span><br />       m = (l + r)/2.0<br />       v = npv(ct, m)<br /><br />       <span class="keyword">break</span> <span class="keyword">if</span> v.abs &lt; 1e-8<br />       <span class="keyword">if</span> v*sign &lt; 0<br />         r = m<br />       <span class="keyword">else</span><br />         l = m<br />       <span class="keyword">end</span><br />     <span class="keyword">end</span><br />     m<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>As my comment implies, the missing piece of code sets some bounds variables:  l for lower and r for roof, I think.  It also sets the sign variable, which give us the sign of the rate we are solving for.</p>
+			<p>If you can take those elements on faith for now, we're looking at a simple binary search in this code.  First we find the mid-point and check its NPV.  If that number is really close to zero, it's our answer.  If the NPV tells us it is too high, we drop the roof.  Otherwise, we raise the lower bound.  Rinse, repeat.  This will converge on the IRR we seek.</p>
+			<p>Now we need to know how Alex found those bounds:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> irr(ct)<br />     l = -0.9999<br />     sign = npv(ct, l)<br />     r = 1.0<br />     <span class="keyword">while</span> npv(ct, r)*sign &gt; 0 <span class="keyword">do</span><br />       r *= 2<br />       <span class="keyword">break</span> <span class="keyword">if</span> r &gt; 1000<br />     <span class="keyword">end</span><br />     <span class="keyword">if</span> r &gt; 1000<br />       l = -1.0001<br />       sign = npv(ct, l)<br />       r = -2.0<br />       <span class="keyword">while</span> npv(ct, r)*sign &gt; 0 <span class="keyword">do</span><br />         r *= 2<br />         <span class="keyword">return</span> 0.0/0.0 <span class="keyword">if</span> r.abs &gt; 1000<br />       <span class="keyword">end</span><br />     <span class="keyword">end</span><br /><br />     <span class="comment"># ... binary search here ...</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The first thing to understand here is why Alex is skirting around the -1 number with values like -0.9999 and -1.0001.  The reason is that NPV doesn't help us there:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; npv(Array.new(5) { rand(201) - 100 }, -1)<br />    =&gt; NaN<br />    &gt;&gt; npv(Array.new(5) { rand(201) - 100 }, -1)<br />    =&gt; -Infinity<br />    &gt;&gt; npv(Array.new(5) { rand(201) - 100 }, -1)<br />    =&gt; NaN<br /><br /></div></div>
+			<p>Given that, Alex's bounds checking code starts by assuming a lower bound of -0.9999.  The first while loop then walks the roof bound up from 1.0 to 1000 searching for a good upper bound.  If those points don't work out, the code pivots to -1.0001 and walking the other bound from -2.0 to -1000.  If both searches fail, we're in the area were IRR is undefined and Alex returns NaN to indicate that.  Otherwise, we have found suitable boundaries and the code moves on to the binary search.</p>
+			<p>Again, that's a non-mathy way to solve this problem.  Definitely browse through the other solutions to get a feel for Newton's method based solutions as well.</p>
+			<p>Since this brings us to three full years of weekly quizzes and my retirement as quizmaster, I want to thank not only those who solved this week's problem but anyone who ever solved a quiz.  If people hadn't supported the effort so well these last three years, it never would have made it this far.  I also need to give a huge thanks to those who contributed quizzes and summaries during the run.  They carried me a good portion of the way and I'm eternally grateful for that.</p>
+			<p>Sincerely, thank you all.</p>
+			<p>Tomorrow, I join most of you as a quiz solver.  I'll leave it to the new team to drop hints about their problems, but I for one am anxious to see them.</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290590">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290593">Sander Land</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290597">Jesse Merriman (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290599">Jesse Merriman (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290600">Frank Fischer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290602">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290605">Paolo Bonzini</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290606">Justin Ethier</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290607">Carl Porth</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290608">Christopher Dicely</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290612">Thomas</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290620">Andr&eacute;s Su&aacute;rez</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290622">Jesse Merriman (4)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290627">Alex Shulgin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290632">Jason Dew</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290648">Clark Grubb</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290699">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/290705">Clark Grubb (2)</a></li>
+			</ol>
+			<p><a href="quiz156_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

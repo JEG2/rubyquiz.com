@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Hash to OpenStruct (#81)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Hash to OpenStruct (#81)</span>
+			<p>by Hans Fugal</p>
+			<p>More than a few times I've wished I could get a nice nested OpenStruct out of YAML data, instead of the more unwieldy nested hashes. It's mostly a matter of style. It's a straightforward task to convert a nested hash structure into a nested OpenStruct, but it's the sort of task that you can do a lot of ways, and I'll bet some of you can come up with more elegant and/or more efficient ways than I have so far.</p>
+			<p>Here's a sample YAML document to get you started:</p>
+			<p class="example">---<br />foo: 1<br />bar:<br />  baz: [1, 2, 3]<br />  quux: 42<br />  doctors:<br />    - William Hartnell<br />    - Patrick Troughton<br />    - Jon Pertwee<br />    - Tom Baker<br />    - Peter Davison<br />    - Colin Baker<br />    - Sylvester McCoy<br />    - Paul McGann<br />    - Christopher Eccleston<br />    - David Tennant<br />  a: {x: 1, y: 2, z: 3}</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>The solutions for this quiz are bite size and filled-to-bursting with clever tricks, so let's check out several.  First, here's the easiest way I saw to not solve the problem, by Ilmari Heikkinen:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Hash<br />     <span class="keyword">def</span> method_missing(mn,*a)<br />       mn = mn.to_s<br />       <span class="keyword">if</span> mn =~ <span class="string">/=$/</span><br />         <span class="keyword">super</span> <span class="keyword">if</span> a.size &gt; 1<br />         <span class="keyword">self</span>[mn[0...-1]] = a[0]<br />       <span class="keyword">else</span><br />         <span class="keyword">super</span> <span class="keyword">unless</span> has_key?(mn) <span class="keyword">and</span> a.empty?<br />         <span class="keyword">self</span>[mn]<br />       <span class="keyword">end</span><br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Ilmari doesn't bother fiddling with imports here, deciding instead to just implement an OpenStructish interface directly in Hash.  Any method call Hash doesn't recognize will be sent to this method_missing() callback.  Inside the method, Ilmari checks to see if the call ended with an equals sign and had exactly one argument.  If so, the assignment is made.  Otherwise, if a matching key can be found, it is fetched and returned.</p>
+			<p>Of course, this kind of wholesale modification of Hash is quite dangerous.  If some code is counting on the normal failure chain of an unknown method called on Hash, this code could easily break it.</p>
+			<p>To get away from that, we're going to need to build the converters, as Jacob Fugal does here:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">"yaml"</span><br />    require <span class="string">"ostruct"</span><br /><br />    <span class="keyword">class</span> Object<br />     <span class="keyword">def</span> to_openstruct<br />       <span class="keyword">self</span><br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">class</span> Array<br />     <span class="keyword">def</span> to_openstruct<br />       map{ |el| el.to_openstruct }<br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">class</span> Hash<br />     <span class="keyword">def</span> to_openstruct<br />       mapped = {}<br />       each{ |key,value| mapped[key] = value.to_openstruct }<br />       OpenStruct.new(mapped)<br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">module</span> YAML<br />     <span class="keyword">def</span> <span class="keyword">self</span>.load_openstruct(source)<br />       <span class="keyword">self</span>.load(source).to_openstruct<br />     <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    p YAML.load_openstruct(File.read(<span class="string">"sample.yml"</span>))<br /><br /></div></div>
+			<p>This was a popular style of solution.  People found ways to shorten it quite a bit, but it's easy to see the goal with this one.  Any normal Object is given a to_openstruct() method that has no effect.  Array's version calls to_openstruct() on each member and Hash passes the call down to each value.  Finally, a method is added to YAML that does the load(), then starts the chain reaction at the top of the constructed object tree.  This call gets passed down by Arrays and Hashes as we just saw and converts most Hashes to OpenStructs.  (It doesn't convert Hashes in the instance variables of custom objects that have been serialized.)</p>
+			<p>Now MenTaLguY threw a big monkey wrench into solutions like this when he posted this alternate test data:</p>
+			<p class="example">---<br />&amp;verily<br />lemurs:<br />  unite: *verily<br />  beneath:<br />    - patagonian<br />    - bread<br />    - products<br />thusly: [1, 2, 3, 4]</p>
+			<p>As you can see, YAML is allowed to have nested data structures.  When I run Jacob's solution on this I get the odd error:</p>
+			<p class="example">Illegal instruction</p>
+			<p>One of MenTaLguY's own solutions to this was to use some lazy evaluation and memoization:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'ostruct'</span><br />    require <span class="string">'lazy'</span><br /><br />    <span class="keyword">def</span> hashes_to_openstructs( obj, memo={} )<br />      <span class="keyword">return</span> obj <span class="keyword">unless</span> Hash === obj<br />      memo[obj.object_id] ||= promise {<br />        OpenStruct.new( Hash[<br />          *obj.inject( [] ) { |a, (k, v)|<br />            a.push k, hashes_to_openstructs( v, memo )<br />          }<br />        ] )<br />      }<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This is a recursive solution like Jacob's, though trimmed down and less complete.  The trick here is that instead of walking the whole object tree immediately, the code just promises to do it when needed.  A promise() is just a magic object that springs to life when it is actually used for the first time (constructing itself by calling the block).</p>
+			<p>The other trick of this method is the memoization.  Using the memo Hash and the ||= operator, the conversion process caches each object by object_id().  Any future calls for the same object, just get the already constructed version straight from the cache.</p>
+			<p>Then TRANS pointed out a interesting fact, YAML already has to understand all this recursive data structure stuff, so we really want to let it do all the hard work and just change what it loads.  TRANS poked around in the innards of YAML and did get a working solution, but why the lucky stiff was drawn into the challenge and suggested this version:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'yaml'</span><br />    require <span class="string">'ostruct'</span><br /><br />    <span class="keyword">class</span> &lt;&lt; YAML::DefaultResolver<br />      alias_method :_node_import, :node_import<br />      <span class="keyword">def</span> node_import(node)<br />        o = _node_import(node)<br />        o.is_a?(Hash) ? OpenStruct.new(o) : o<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This just overrides a piece of YAML behavior to check if the object just loaded was a Hash.  When it is, it is replaced with an OpenStruct.  Simple and very effective.</p>
+			<p>Now this YAML solution will convert Hashes inside the instance variables of objects.  That's probably a bad thing, since those classes likely weren't designed with that in mind.  You always have to weight the tradeoffs and choose a solution that will best meet your current needs.</p>
+			<p>A big thanks to all who couldn't help but fiddle with Hans's fun little challenge.  I don't believe I've ever seen such variation in the solutions before.</p>
+			<p>Tomorrow's quiz is to help Benjohn Barnes get into shape...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195810">Ross Bamford</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195811">Joey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195814">MenTaLguY</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195815">Daniel Berger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195825">Logan Capaldo</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195827">TRANS</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195845">Daniel Schierbeck</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195851">why the lucky stiff</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195858">Rob Biedenharn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195875">Alison Rowland</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195876">Adam Shelly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195878">Ilmari Heikkinen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195941">Shane Emmons</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195959">Jacob Fugal</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/195971">Jamie Macey</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/196007">TRANS (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/196291">Ola Bini</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/196296">Ola Bini (2)</a></li>
+			</ol>
+			<p><a href="quiz81_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

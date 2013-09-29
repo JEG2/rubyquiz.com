@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<title>Ruby Quiz - Checking Credit Cards (#122)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Checking Credit Cards (#122)</span>
+			<p>Before a credit card is submitted to a financial institution, it generally makes sense to run some simple reality checks on the number.  The numbers are a good length and it's common to make minor transcription errors when the card is not scanned directly.</p>
+			<p>The first check people often do is to validate that the card matches a known pattern from one of the accepted card providers.  Some of these patterns are:</p>
+			<p class="example">+============+=============+===============+<br />| Card Type  | Begins With | Number Length |<br />+============+=============+===============+<br />| AMEX       | 34 or 37    | 15            |<br />+------------+-------------+---------------+<br />| Discover   | 6011        | 16            |<br />+------------+-------------+---------------+<br />| MasterCard | 51-55       | 16            |<br />+------------+-------------+---------------+<br />| Visa       | 4           | 13 or 16      |<br />+------------+-------------+---------------+</p>
+			<p>All of these card types also generate numbers such that they can be validated by the Luhn algorithm, so that's the second check systems usually try.  The steps are:</p>
+			<p class="example">1. Starting with the next to last digit and continuing with every other<br />   digit going back to the beginning of the card, double the digit<br />2. Sum all doubled and untouched digits in the number<br />3. If that total is a multiple of 10, the number is valid</p>
+			<p>For example, given the card number 4408 0412 3456 7893:</p>
+			<p class="example">Step 1:  8 4 0 8 0 4 2 2 6 4 10 6 14 8 18 3<br />Step 2:  8+4+0+8+0+4+2+2+6+4+1+0+6+1+4+8+1+8+3 = 70<br />Step 3:  70 % 10 == 0</p>
+			<p>Thus that card is valid.</p>
+			<p>Let's try one more, 4417 1234 5678 9112:</p>
+			<p class="example">Step 1:  8 4 2 7 2 2 6 4 10 6 14 8 18 1 2 2<br />Step 2:  8+4+2+7+2+2+6+4+1+0+6+1+4+8+1+8+1+2+2 = 69<br />Step 3:  69 % 10 != 0</p>
+			<p>That card is not valid.</p>
+			<p>This week's Ruby Quiz is to write a program that accepts a credit card number as a command-line argument.  The program should print the card's type (or Unknown) as well a Valid/Invalid indication of whether or not the card passes the Luhn algorithm.</p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>This quiz is super easy, of course.  The reason I ran it though is that I wanted to see how people approached the Luhn algorithm implementation.  It's an easy enough process, but I found myself using an odd combination of Regexp and eval() when I was fiddling with it:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    puts eval( ARGV.join.gsub(<span class="string">/(\d)?(\d)(?=(?:\d\d)*\d$)/</span>) <span class="keyword">do</span><br />      <span class="string">"#{$1 + '+' if $1}#{($2.to_i * 2).to_s.split('').join('+')}+"</span><br />    <span class="keyword">end</span> ) % 10 == 0 ? <span class="string">"Valid"</span> : <span class="string">"Invalid"</span><br /><br /></div></div>
+			<p>I knew that was ugly and wanted to see how you guys would pretty it up.</p>
+			<p>You have shown me the light and it tells me...  Daniel Martin is crazy.  I'll leave it to him to explain his own solution, as punishment for the time it took me to puzzle it out.  I had to print that Array inside of the inject() call during each iteration to see how it built up the answer.</p>
+			<p>I do want to show you a slew of interesting tidbits though.  First, let's get the formality of a full solution out of the way.  Here's some code from Drew Olson:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> CreditCard<br />      <span class="keyword">def</span> initialize num<br />        <span class="variable">@number</span> = num<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># check specified conditions to determine the type of card</span><br />      <span class="keyword">def</span> type<br />        length = <span class="variable">@number</span>.size<br />        <span class="keyword">if</span> length == 15 &amp;&amp; <span class="variable">@number</span> =~ <span class="string">/^(34|37)/</span><br />          <span class="string">"AMEX"</span><br />        <span class="keyword">elsif</span> length == 16 &amp;&amp; <span class="variable">@number</span> =~ <span class="string">/^6011/</span><br />          <span class="string">"Discover"</span><br />        <span class="keyword">elsif</span> length == 16 &amp;&amp; <span class="variable">@number</span> =~ <span class="string">/^5[1-5]/</span><br />          <span class="string">"MasterCard"</span><br />        <span class="keyword">elsif</span> (length == 13 || length == 16) &amp;&amp; <span class="variable">@number</span> =~ <span class="string">/^4/</span><br />          <span class="string">"Visa"</span><br />        <span class="keyword">else</span><br />          <span class="string">"Unknown"</span><br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># determine if card is valid based on Luhn algorithm</span><br />      <span class="keyword">def</span> valid?<br />        digits = <span class="string">''</span><br />        <span class="comment"># double every other number starting with the next to last</span><br />        <span class="comment"># and working backwards</span><br />        <span class="variable">@number</span>.split(<span class="string">''</span>).reverse.each_with_index <span class="keyword">do</span> |d,i|<br />          digits += d <span class="keyword">if</span> i%2 == 0<br />          digits += (d.to_i*2).to_s <span class="keyword">if</span> i%2 == 1<br />        <span class="keyword">end</span><br /><br />        <span class="comment"># sum the resulting digits, mod with ten, check against 0</span><br />        digits.split(<span class="string">''</span>).inject(0){|sum,d| sum+d.to_i}%10 == 0<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="keyword">if</span> <span class="keyword">__FILE__</span> == <span class="global">$0</span><br />      card = CreditCard.new(ARGV.join.chomp)<br />      puts <span class="string">"Card Type: #{card.type}"</span><br />      <span class="keyword">if</span> card.valid?<br />        puts <span class="string">"Valid Card"</span><br />      <span class="keyword">else</span><br />        puts <span class="string">"Invalid Card"</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>As Drew shows, checking the type() is just a matter of verifying length and prefix against a known list.  Nothing tricky here, as long as you don't get into the more complicated cards discussed in the quiz thread.</p>
+			<p>The valid?() method is the Luhn algorithm I wanted to see.  Drew bypasses the need for my crazy Regexp using a trick I'm always harping on:  reverse the data.  It won't make any difference mathematically if the number is backwards and then you just need to double each second digit.  Drew figures out when that is by combining each_with_index() with a little modulo test.  From there, it's a simple sum of the digits and the final modulo test to determine validity.</p>
+			<p>The application code just runs those two methods and prints results.</p>
+			<p>Looking at Drew's Luhn algorithm again, see how he declares the digits variable and then fills it up?  That's the classic inject() pattern, but inject() wasn't an option there since the code needed each_with_index() over just plain each().  This situation seems to call for an inject_with_index(), and look what doug meyer wrote:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="keyword">class</span> Array<br />      <span class="keyword">def</span> inject_with_index(injected)<br />        each_with_index{|obj, index| injected = <span class="keyword">yield</span>(injected, obj, index) }<br />        injected<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>I guess he felt the same way, though I would have added this method to Enumerable instead of Array.  Others used a hand rolled map_with_index() in similar ways.</p>
+			<p>Now, if you want to get away from all this index checking, you need to take a more functional approach and some solutions definitely did that.  Here's the same algorithm we've been examining from Ryan Leavengood's code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'enumerator'</span><br /><br />    <span class="comment"># ...</span><br /><br />    <span class="keyword">def</span> <span class="keyword">self</span>.luhn_check(cc)<br />      <span class="comment"># I like functional-style code (though this may be a bit over the top)</span><br />      (cc.split(<span class="string">''</span>).reverse.enum_for(:each_slice, 2).inject(<span class="string">''</span>) <span class="keyword">do</span> |s, (a, b)|<br />        s &lt;&lt; a + (b.to_i * 2).to_s<br />      <span class="keyword">end</span>.split(<span class="string">''</span>).inject(0) {|sum, n| sum + n.to_i}) % 10 == 0<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>This process is interesting, I think, so let's walk through it.  The card number is split() into digits and reverse()d as we have been seeing.</p>
+			<p>Then an Enumerator for each_slice() is combined with inject() to build up the new digits.  This passes the digits into inject() two at a time, so the block can just double the second one.  This will give you an extra nil at the end of an odd card number, but to_i() turn that into a harmless zero.</p>
+			<p>The digits are again divided and this time summed to get a grand total.  Check that for divisibility by ten and we have our answer.</p>
+			<p>Now Ryan chose to build up the digits and then sum, but you could do both in the same iterator.  The first number is only ever one digit, so it's only the second number that needs special handling:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">"enumerator"</span><br />    puts ARGV.join.split(<span class="string">""</span>).reverse.enum_slice(2).inject(0) { |sum, (l, r)|<br />      sum + l.to_i +<br />            (r.to_i * 2).to_s.split(<span class="string">""</span>).inject(0) { |s, d| s + d.to_i }<br />    } % 10 == 0 ? <span class="string">"Valid"</span> : <span class="string">"Invalid"</span><br /><br /></div></div>
+			<p>Ryan's version is probably still a little cleaner though.</p>
+			<p>Going one step further is to think about that second digit some more.  It's the source of the need for tricky code, because it might be a two digit number.  However, it doesn't have to be.  Nine doubled is 18, but the sum of the digits of 18 is 9.  In fact, if you subtract nine from any double over ten you will get the same sum.  One way to put this to use is with a trivial lookup table, as Brad Ediger did:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># Returns true if Luhn check passes for this number</span><br />    <span class="keyword">def</span> luhn_valid?<br />      <span class="comment"># a trick: double_and_sum[8] == sum_digits(8*2) == sum_digits(16) ==</span><br />      <span class="comment">#                               1 + 6           == 7</span><br />      double_and_sum = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9]<br />      split(<span class="string">//</span>).reverse.<br />                mapn{|a,b| a.to_i + double_and_sum[b.to_i]}.sum % 10 == 0<br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Skipping over the sum() and mysterious mapn() methods for now, just take in the usage of double_and_sum.  Those are the sums of all possible doubles of a single digit.  Given that, Brad's solution has to do a lot less busy work than many of the others we saw.  I thought this was a clever reduction of the problem.</p>
+			<p>I'm sure you can guess what that sum() method does, but let's do take a quick peek at mapn(), which is another bit of clever code:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'enumerator'</span><br />    <span class="keyword">module</span> Enumerable<br />      <span class="comment"># Maps n-at-a-time (n = arity of given block) and collects the results</span><br />      <span class="keyword">def</span> mapn(&amp;b)<br />        r = []<br />        each_slice(b.arity) {|*args| r &lt;&lt; b.call(*args) }<br />        r<br />      <span class="keyword">end</span><br /><br />      <span class="keyword">def</span> sum; inject(0){|s, i| s + i} <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>You can see that mapn() is essentially, enum_slice(N).map().  The interesting part is that N is chosen from the arity of your provided block.  If we ask for two at a time, we get two; ask for three and we get three:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    &gt;&gt; (1..10).mapn { |a, b| [a, b] }<br />    =&gt; [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]]<br />    &gt;&gt; (1..10).mapn { |a, b, c| [a, b, c] }<br />    =&gt; [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, <span class="keyword">nil</span>, <span class="keyword">nil</span>]]<br /><br /></div></div>
+			<p>That's a pretty smart iterator, I say.</p>
+			<p>This completes our tour of some of the wild and wacky ideas for applying the Luhn algorithm to card numbers.  My thanks to all who shared them.</p>
+			<p>Ruby Quiz will now take a one week break.  Work has been rough this week and I need some down time.  I'll be back next week, rested, and with new quizzes...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249499">Raj Sahae</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249505">Morton Goldberg</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249509">anansi</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249510">Jesse Merriman</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249511">Joseph Seaton</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249513">Sebastian Hungerecker</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249514">Christoffer Lern&ouml;</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249515">Robert Dober</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249518">Todd Benson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249519">Gordon Thiesfeld</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249533">Ryan Leavengood</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249540">James Koppel</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249542">Yossef Mendelssohn</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249544">Jeremy Hinegardner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249551">Philip Gatt</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249552">Chris Shea</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249554">Ruy Diaz Jara</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249556">Mark Day</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249557">Brad Ediger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249560">Bryan Weatherly</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249565">Abhijit Gadgil</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249570">Hirotsugu Asari</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249571">James Barnett</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249576">Raj Sahae (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249583">Daniel Martin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249584">Donald Ball</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249626">Rolando Abarca</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249630">akbarhome</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249639">darren kirby</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249669">Daniel Martin (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249676">Wil</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249697">Drew Olson</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249719">Mike Moore</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249737">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249752">Bartosz Blimke</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249810">Francois Lafortune</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/250423">Kai Weing&auml;rtner</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249819">doug meyer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249883">Alex Wayne</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249885">Bob Lisbonne</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249918">Colin A. Bartlett</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249946">Christian Neukirchen</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249969">Dennis Frommknecht</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249976">Kenneth Love</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/249978">Chase Southard</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/250011">Paul Novak</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/250014">Pieter V.</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/250043">Harry Kakueki</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/250060">Rick DeNatale</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/250154">Paul Novak (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/268776">Paolo Bonzini</a></li>
+			</ol>
+			<p><a href="quiz122_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>

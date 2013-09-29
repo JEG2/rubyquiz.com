@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Ruby Quiz - Happy Numbers (#93)</title>
+	<link rel="stylesheet" type="text/css" href="quiz.css" />
+	<link rel="stylesheet" type="text/css" href="print.css" media="print" />
+</head><body>
+	<div id="page">
+		<div id="header"><span class="ruby">Ruby</span> <span class="quiz">Quiz</span></div>
+		<div id="content">
+			<span class="title">Happy Numbers (#93)</span>
+			<p>by Shane Emmons</p>
+			<p>Write a program that tells whether a given integer is happy. A happy number is found using the following process: Take the sum of the squares of its digits, and continue iterating this process until it yields 1, or produces an infinite loop. </p>
+			<p>For example the number 7:</p>
+			<p class="example">7^2 = 49<br />4^2 + 9^2 = 97<br />9^2 + 7^2 = 130<br />1^2 + 3^2 + 0^2 = 10<br />1^2 + 0^2 = 1</p>
+			<p>If a number is not happy than it is obviously unhappy. Now that you have this program, what is the largest happy number you can find? What is the happiest number between 1 and 1,000,000. I define the happiest number as the smallest number that finds the most other happy numbers with it, i.e. 7 found four other numbers (49, 97, 130, and 10) making it a rank 4 in happiness.</p>
+			<p>If you find all these examples trivial, write you program so that it will find happy numbers in other bases such as base 2 or 16. From there you can extend the program so that it finds happy bases (other than 2 and 4). A happy bases is a base where all numbers are happy. Good luck. </p>
+			<hr />
+			<p><span class="title">Quiz Summary</span></p>
+			<p>I posted a link to some additional information early in the quiz discussion that expanded on the definition provided by the quiz:</p>
+			<p><a href="http://mathworld.wolfram.com/HappyNumber.html">Happy Number</a></p>
+			<p>According to that document, you can tell that a number is unhappy if the sum of the squares of the digits ever reaches 0, 4, 16, 20, 37, 42, 58, 89, or 145.  That's really just a different way to find the repeat pattern mentioned in the quiz:</p>
+			<p class="example">0: 0 <br />4: 16 37 58 89 145 42 20 4 <br />16: 37 58 89 145 42 20 4 16 <br />20: 4 16 37 58 89 145 42 20 <br />37: 58 89 145 42 20 4 16 37 <br />42: 20 4 16 37 58 89 145 42 <br />58: 89 145 42 20 4 16 37 58 <br />89: 145 42 20 4 16 37 58 89 <br />145: 42 20 4 16 37 58 89 145</p>
+			<p>Here's the code I used to generate the above list, which just loops over the sum of the squares until a repeat is found:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -w</span><br /><br />    [0, 4, 16, 20, 37, 42, 58, 89, 145].each <span class="keyword">do</span> |n|<br />      print <span class="string">"#{n}: "</span><br /><br />      seen = {n =&gt; <span class="keyword">true</span>}<br />      loop <span class="keyword">do</span><br />        sum = n.to_s.split(<span class="string">""</span>).inject(0) { |tot, d| tot + d.to_i ** 2 }<br /><br />        print <span class="string">"#{sum} "</span><br />        <span class="keyword">if</span> seen[sum]<br />          puts<br />          <span class="keyword">break</span><br />        <span class="keyword">else</span><br />          seen[sum] = <span class="keyword">true</span><br />          n         = sum<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>The advantage of using the list is that you don't need to wait for the pattern to start repeating and thus you find answers quicker.</p>
+			<p>Let's examine a solution that uses these numbers and another couple of optimizations.  Here's my own code, strongly influenced by Simon Kroeger's solution:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment">#!/usr/bin/env ruby -w</span><br /><br />    UNHAPPY = [0, 4, 16, 20, 37, 42, 58, 89, 145].freeze<br /><br />    happy = Hash.new <span class="keyword">do</span> |found, num|<br />      digits     = num.to_s.split(<span class="string">""</span>).sort.map { |d| d.to_i }.<br />                                           delete_if { |d| d.zero? }<br />      happiness  = digits.inject(0) { |sum, d| sum + d * d }<br />      found[num] = <span class="keyword">if</span> happiness == 1<br />        <span class="keyword">true</span><br />      <span class="keyword">elsif</span> UNHAPPY.include? happiness<br />        <span class="keyword">false</span><br />      <span class="keyword">else</span><br />        found[happiness]<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    (1..100_000).each { |n| p n <span class="keyword">if</span> happy[n] }<br /><br /></div></div>
+			<p>This is the standard Hash memoization pattern Ruby Quiz regulars are probably pretty familiar with by now.  By creating a Hash and providing a block that can calculate the values from the keys, we ensure that Ruby will only run the code the first time it is needed.  All other access is a simple Hash lookup and generally quite fast since Ruby's Hash is written in C.</p>
+			<p>The Hash block is where you will find all the hard work for this solution.  The first step taken there is to convert the number into an Array of digits and you will find two more optimizations in this conversion.  First note the final call to delete_if().  Zero squared is still zero and adding zero has no effect, so we can safely strip those out of the digits.  That can take a number like 1,000,000 down to just the digit list of [1], skipping a fair amount of busy work.</p>
+			<p>The second optimization in here is the call to sort().  This consolidates what we need to store in the Hash a good deal.  The numbers 123 and 321 both involve the same calculations, so we normalize digit order and take advantage of the ability to skip several calculations.</p>
+			<p>From there the block gets almost boring.  A happiness rating is figured, which is just the sum of the digit squares.  That rating is then checked for a known happy or unhappy value.  If found, the Hash can set and return true or false.  Otherwise the answer is determined by recursing to find the happiness of the sum.</p>
+			<p>This solution ends with a trivial iteration to print all happy numbers between one and 100,000.</p>
+			<p>My code just checked whether or not a given number is happy.  The quiz mentioned other challenges and most people took them on.  One such challenge involved finding out just how happy a number really is.  Here's the start of some optimized code from Hans Fugal that does just that:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    require <span class="string">'set'</span><br /><br />    <span class="keyword">class</span> Happy<br />      <span class="keyword">def</span> initialize<br />        <span class="variable">@happy_numbers</span> = { 1 =&gt; 0 }<br />        <span class="variable">@unhappy_numbers</span> = Set.new<br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>You can see that Hans intends to track both happy and unhappy numbers.  Happy numbers will be stored in a Hash with the number as the key and the value being the happiness rank for that number.  Unhappy numbers will be a Set of numbers.</p>
+			<p>Note that you can't just use the keys for the happy numbers Hash to determine if a number is unhappy.  Not being in that list may just mean the number hasn't been checked yet.</p>
+			<p>Here's the beginning of the method that does all the work:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> happy(x)<br />        <span class="keyword">return</span> <span class="keyword">true</span> <span class="keyword">if</span> <span class="variable">@happy_numbers</span>.has_key?(x)<br />        <span class="keyword">return</span> <span class="keyword">false</span> <span class="keyword">if</span> <span class="variable">@unhappy_numbers</span>.include?(x)<br /><br />        path = [x]<br />        loop <span class="keyword">do</span><br />          sum = 0<br />          <span class="keyword">while</span> x &gt; 0<br />            x, r = x.divmod(10)<br />            sum += r**2<br />          <span class="keyword">end</span><br /><br />          <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method is used to check if a number is happy, but it squirrels away the happiness rank for the number as it finds the answer.  You can see that it begins with checks that short-circuit the process when the result is already known.  If the result is not yet known, the code enters a loop() to figure it out.</p>
+			<p>The path variable will eventually hold each step from the original number, to the squares sum that is known to be happy or unhappy.  It begins with just what we currently know:  the number itself.</p>
+			<p>The first bit of code in the loop() is a digit splitter and squares summation all-in-one.  It divides the digits out and adds them to a running sum as it goes.  This is quite a bit quicker than the multiple iterators used to do the same in my code.</p>
+			<p>Once we have a sum, it's time to check it for happiness:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">          <span class="comment"># ...</span><br /><br />          <span class="keyword">if</span> <span class="variable">@unhappy_numbers</span>.include?(sum)<br />            <span class="keyword">return</span> <span class="keyword">false</span><br />          <span class="keyword">elsif</span> <span class="variable">@happy_numbers</span>.has_key?(sum)<br />            r = <span class="variable">@happy_numbers</span>[sum]<br />            path.each_with_index <span class="keyword">do</span> |x,i|<br />              <span class="variable">@happy_numbers</span>[x] = r + path.size - i<br />            <span class="keyword">end</span><br />            <span class="keyword">return</span> <span class="keyword">true</span><br />          <span class="keyword">end</span><br /><br />          path.push sum<br /><br />          <span class="comment"># ...</span><br /><br /></div></div>
+			<p>If the sum is unhappy, we know all we need to know and the result is immediately returned to the user.</p>
+			<p>If the sum is happy, we need to add all steps on the current path to the happy numbers Hash.  Their rank is the rank of the sum we found plus their distance from the end of the current path.  With that saved, true is returned to the calling code.</p>
+			<p>If we didn't find the number in either place it is just another step on the path and push() is called to reflect this.</p>
+			<p>Now we need the exit condition for the loop():</p>
+			<div class="code"><span class="type">ruby</span><div class="body">          <span class="comment"># ...</span><br /><br />          <span class="keyword">if</span> [0, 1, 4, 16, 20, 37, 42, 58, 89, 145].include?(sum)<br />            <span class="keyword">if</span> sum == 1<br />              s = path.size<br />              path.each_with_index <span class="keyword">do</span> |x,i|<br />                <span class="variable">@happy_numbers</span>[x] = s - i - 1<br />              <span class="keyword">end</span><br />              <span class="keyword">return</span> <span class="keyword">true</span><br />            <span class="keyword">else</span><br />              path.each <span class="keyword">do</span> |x|<br />                <span class="variable">@unhappy_numbers</span>.add x<br />              <span class="keyword">end</span><br />              <span class="keyword">return</span> <span class="keyword">false</span><br />            <span class="keyword">end</span><br />          <span class="keyword">end</span><br /><br />          x = sum<br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br /><br />      <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This final bit of code checks for the known happy and unhappy sums.  If the number is happy, we again place each step in the path in the happy numbers Hash according to their distance from the end of the path.  If the number is unhappy, all steps in the path are added to the unhappy numbers Set.</p>
+			<p>If the code makes it through all of that with no results, the current number is switched out for the squares sum and the code loop()s to find the answer.</p>
+			<p>The method we just digested saved the number's happiness rank, so we now need a way to get it back out:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">      <span class="comment"># ...</span><br /><br />      <span class="keyword">def</span> rank(x)<br />        raise ArgumentError, <span class="string">"#{x} is unhappy."</span> <span class="keyword">unless</span> happy(x)<br />        <span class="keyword">return</span> <span class="variable">@happy_numbers</span>[x]<br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br />    <span class="comment"># ...</span><br /><br /></div></div>
+			<p>This method first ensures the number has been ranked with a call to happy().  Once it is known to be in the Hash, it's a simple lookup to locate and return a rank.</p>
+			<p>Here's the user interface code Hans included with the solution, which will give the happiness rank for any numbers passed via STDIN:</p>
+			<div class="code"><span class="type">ruby</span><div class="body">    <span class="comment"># ...</span><br /><br />    haphap = Happy.new<br />    ARGF.each_line <span class="keyword">do</span> |l|<br />      l.scan(<span class="string">/\d+/</span>) <span class="keyword">do</span> |token|<br />        x = token.to_i<br />        <span class="keyword">if</span> haphap.happy(x)<br />          puts <span class="string">"#{x} is happy with rank #{haphap.rank(x)}"</span><br />        <span class="keyword">end</span><br />      <span class="keyword">end</span><br />    <span class="keyword">end</span><br /><br /></div></div>
+			<p>Be sure and walk the other solutions.  Many nice examples were given for finding happy bases.  Daniel Martin even sent in a great NArray solution for that.</p>
+			<p>My thanks to all happy coders who got to play with happy numbers, allowing me to write this happy summary.</p>
+			<p>Tomorrow you all get a chance to earn double-O status, if your code is small enough and accurate...</p>
+		</div>
+		<div id="logo"><img src="images/ruby_quiz_logo.jpg" alt="" width="157" height="150" /></div>
+		<div id="links">
+			<span class="title">Quiz Solutions</span>
+			<ol>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212435">Karl von Laudermann</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212436">Phrogz</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212438">Pawel Szymczykowski</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212439">Sander Land</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212440">Ken Bloom</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212452">Willian Henderson-Frost</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212476">Eric DUMINIL</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212505">David Tran</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212524">Hans Fugal</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212544">Helge Elvik</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212571">Dirk Meijer</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212764">David Tran (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212805">Vance Heron</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212827">Eric Torreborre</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212828">Tim Hoolihan</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212861">Ken Bloom (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212873">Bob Showalter</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212874">Glen F. Pankow</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212904">Mike Dvorkin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212923">Simon Kr&ouml;ger</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212947">James Edward Gray II</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212962">Daniel Martin</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/212963">David Tran (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/213000">Daniel Martin (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/213009">Daniel Martin (3)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/213015">Rick DeNatale</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/213064">Matthew Moss</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/213071">Matthew Moss (2)</a></li>
+				<li><a href="http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/213090">Michael Ulm</a></li>
+			</ol>
+			<p><a href="quiz93_sols.zip">Download Solutions</a></p>
+			<p><a href="index.html">Back to Quiz Listing</a></p>
+		</div>
+		<div id="footer">&nbsp;</div>
+	</div>
+</body>
+</html>
